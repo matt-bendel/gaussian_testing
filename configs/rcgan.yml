@@ -1,0 +1,21 @@
+checkpoint_dir: "/Users/mattbendel/Documents/"
+
+K: 5
+
+d: 10
+num_z_train: 2
+num_z_valid: 8
+num_z_pca: 32
+num_pc: 5
+pca_reg_freq: 100
+
+batch_size: 64
+num_epochs: 200
+
+#optimizer:
+lr: 0.001
+beta_1: 0
+beta_2: 0.99
+gp_weight: 10
+drift_weight: 1e-3
+

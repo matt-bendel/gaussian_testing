@@ -1,0 +1,4 @@
+venv/
+figs/
+figs_old/
+lightning_logs/

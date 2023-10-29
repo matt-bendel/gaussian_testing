@@ -1,0 +1,16 @@
+checkpoint_dir: "/Users/mattbendel/Documents/"
+
+in_chans: 1
+out_chans: 1
+
+K: 5
+im_size: 28
+
+batch_size: 64
+num_epochs: 300
+
+#optimizer:
+lr: 0.001
+beta_1: 0.9
+beta_2: 0.999
+
