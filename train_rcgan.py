@@ -37,7 +37,7 @@ if __name__ == '__main__':
         cfg = yaml.load(f, Loader=yaml.FullLoader)
         cfg = json.loads(json.dumps(cfg), object_hook=load_object)
 
-    # model = rcGAN(cfg, args.exp_name)
+    # model = rcGAN(cfg, args.exp_name, args.d)
     # model = rcGANwPCAReg(cfg, args.exp_name)
     # model = rcGANwLazyReg(cfg, args.exp_name)
     model = rcGANwLazyRegSimple(cfg, args.exp_name, args.d)
@@ -75,12 +75,15 @@ if __name__ == '__main__':
         filename='best-mse',
         save_top_k=1
     )
-    # trainer = pl.Trainer(accelerator="cpu",# strategy='ddp' if not args.dp else 'dp',
-    #                      max_epochs=cfg.num_epochs, callbacks=[checkpoint_callback_epoch],
-    #                      num_sanity_val_steps=2, profiler="simple", logger=wandb_logger, benchmark=False, log_every_n_steps=10)
-    trainer = pl.Trainer(accelerator="mps",  # strategy='ddp' if not args.dp else 'dp',
+
+    trainer = pl.Trainer(accelerator="gpu", devices=1, strategy='ddp',
                          max_epochs=cfg.num_epochs, callbacks=[checkpoint_callback_epoch],
                          num_sanity_val_steps=0, profiler="simple", benchmark=False,
                          log_every_n_steps=10)
 
+    # Mac trainer
+    # trainer = pl.Trainer(accelerator="mps",
+    #                      max_epochs=cfg.num_epochs, callbacks=[checkpoint_callback_epoch],
+    #                      num_sanity_val_steps=0, profiler="simple", benchmark=False,
+    #                      log_every_n_steps=10)
     trainer.fit(model, dm)

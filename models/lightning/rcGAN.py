@@ -11,14 +11,14 @@ from torchmetrics.functional import peak_signal_noise_ratio
 
 
 class rcGAN(pl.LightningModule):
-    def __init__(self, args, exp_name):
+    def __init__(self, args, exp_name, d):
         super().__init__()
         self.args = args
         self.exp_name = exp_name
-        self.d = 10
+        self.d = d
 
-        self.generator = GeneratorLinear()
-        self.discriminator = Discriminator()
+        self.generator = GeneratorLinear(d)
+        self.discriminator = Discriminator(d)
 
         self.betastd = 1
         self.automatic_optimization = False

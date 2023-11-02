@@ -91,7 +91,7 @@ class GaussianDataModule(pl.LightningDataModule):
     def __init__(self, d):
         super().__init__()
         self.batch_size = 32
-        self.num_workers = 8
+        self.num_workers = 1
         mu = np.load(f'/Users/mattbendel/Documents/pca_gaussian/data/stats_{d}d/gt_mu.npy')
         e_vals = np.abs(np.load(f'/Users/mattbendel/Documents/pca_gaussian/data/stats_{d}d/gt_e_vals.npy'))
         e_vecs = np.load(f'/Users/mattbendel/Documents/pca_gaussian/data/stats_{d}d/gt_e_vecs.npy')

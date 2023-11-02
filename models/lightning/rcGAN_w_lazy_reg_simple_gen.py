@@ -69,6 +69,7 @@ class rcGANwLazyRegSimple(pl.LightningModule):
         self.beta_pca = 1e-3
 
         self.betastd = 1
+        self.lam_eps = 1e-3
         self.automatic_optimization = False
         self.val_outputs = []
 
@@ -144,7 +145,7 @@ class rcGANwLazyRegSimple(pl.LightningModule):
             2 / (np.pi * self.args.num_z_train * (self.args.num_z_train + 1))) * torch.std(gens, dim=1).mean()
 
     def training_step(self, batch, batch_idx):
-        print("in train")
+        # print("in train")
 
         x, y, mask = batch
         x = x.unsqueeze(1)
@@ -218,7 +219,7 @@ class rcGANwLazyRegSimple(pl.LightningModule):
                         torch.transpose(gens_zm_det.clone().detach(), 0, 1), torch.matmul(gens_zm_det.clone().detach(), Vh.mT)))
 
                     #cfg 1
-                    sig_diff = 1 / (torch.norm(current_x_xm, p=2) ** 2 * Vh.shape[0]).detach() * (1 - 1 / (S ** 2) * torch.diag(inner_product_mat.clone().detach())) ** 2
+                    sig_diff = 1 / (torch.norm(current_x_xm, p=2) ** 2 * Vh.shape[0]).detach() * (1 - 1 / (S ** 2 + self.lam_eps) * torch.diag(inner_product_mat.clone().detach())) ** 2
 
                     # cfg 2
                     # sig_diff = 1 / (torch.norm(current_x_xm, p=2) ** 2 * Vh.shape[0]).detach() * (S ** 2 - torch.diag(inner_product_mat.clone().detach())) ** 2
