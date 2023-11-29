@@ -16,6 +16,9 @@ from models.lightning.rcGAN_w_lazy_reg_simple_gen import rcGANwLazyRegSimple
 from models.lightning.rcGAN_no_std_dev import rcGANNoStdDev
 from data.lightning.GaussianDataModule import GaussianDataModule
 
+# TODO: Discriminatr
+# TODO: Reduce dimensionality
+
 def load_object(dct):
     return types.SimpleNamespace(**dct)
 
@@ -56,8 +59,8 @@ if __name__ == '__main__':
         monitor='epoch',
         mode='max',
         dirpath=cfg.checkpoint_dir + args.exp_name + '/',
-        filename='best-mse',
-        save_top_k=1
+        filename='checkpoint-{epoch}',
+        save_top_k=50
     )
 
     checkpoint_callback_psnr = ModelCheckpoint(

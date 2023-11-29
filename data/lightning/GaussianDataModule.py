@@ -56,12 +56,8 @@ class DataTransform:
         self.A = torch.eye(self.M)
         self.mask = torch.ones(d)
 
-        if d == 10:
-            self.A[[0, 1, 5, 8, 9], :] = 0
-            self.mask[[0, 1, 5, 8, 9]] = 0
-        else:
-            self.A[np.arange(d // 2) * 2, :] = 0
-            self.mask[np.arange(d // 2) * 2] = 0
+        self.A[np.arange(d // 2) * 2, :] = 0
+        self.mask[np.arange(d // 2) * 2] = 0
 
         self.w_mu = torch.zeros(self.M)
         self.w_cov = torch.eye(self.M) * 0.001
@@ -96,7 +92,7 @@ class DataTransform:
 class GaussianDataModule(pl.LightningDataModule):
     def __init__(self, d):
         super().__init__()
-        self.batch_size = 32
+        self.batch_size = 64
         self.num_workers = 1
         # Server
         mu = np.load(f'/home/bendel.8/Git_Repos/gaussian_testing/data/stats_{d}d/gt_mu.npy')

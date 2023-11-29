@@ -19,7 +19,8 @@ from models.lightning.rcGAN_no_std_dev import rcGANNoStdDev
 from models.lightning.PCANET import PCANET
 from data.lightning.GaussianDataModule import DataTransform
 
-
+# TODO: split cfid into mean and covariance
+# TODO: report NMSE
 class Posterior:
     def __init__(self, d, mu_x, Sig_xx, sig_noise, y):
         inds = np.arange(d // 2) * 2
@@ -46,27 +47,32 @@ class Posterior:
 
         return rho
 
-    def cfid(self, posterior_mean_hat, posterior_cov_hat):
-        # mu_dist = np.linalg.norm(self.posterior_mean - posterior_mean_hat) ** 2
-        cov_sum = posterior_cov_hat + self.posterior_cov
-        posterior_prod_sqrt = sp.linalg.sqrtm(self.posterior_cov_sqrt @ posterior_cov_hat @ self.posterior_cov_sqrt)
+    def cfid(self, pmh, pch):
+        mu_dist = np.linalg.norm(self.mu_x[:, 0] - pmh, ord=2) ** 2
+        cov_sum = pch + self.posterior_cov
+        posterior_prod_sqrt = sp.linalg.sqrtm(self.posterior_cov_sqrt @ pch @ self.posterior_cov_sqrt)
 
-        return np.trace(cov_sum - 2 * posterior_prod_sqrt)
+        return mu_dist, np.trace(cov_sum - 2 * posterior_prod_sqrt)
 
 
 def load_object(dct):
     return types.SimpleNamespace(**dct)
 
 
+def nmse(x_true, x_fake, x_m):
+    return np.linalg.norm(x_true - x_fake, ord=2) ** 2 / (np.linalg.norm(x_true, ord=2) ** 2)
+
+
 def compute_posterior_stats(generator, y, mask):
     num_z = 1000
 
-    gens = np.zeros((num_z, 100))
+    gens = np.zeros((num_z, 60))
     for z in range(num_z):
         with torch.no_grad():
             gens[z, :] = generator.forward(y.unsqueeze(0), mask.unsqueeze(0))[0, 0, :].numpy()
 
     posterior_mean_hat = np.mean(gens, axis=0)
+
 
     gens_zero_mean = gens - posterior_mean_hat[None, :]
 
@@ -86,7 +92,7 @@ if __name__ == '__main__':
         cfg = yaml.load(f, Loader=yaml.FullLoader)
         cfg = json.loads(json.dumps(cfg), object_hook=load_object)
 
-    model = rcGAN.load_from_checkpoint(cfg.checkpoint_dir + args.exp_name + '/best-mse.ckpt')
+    model = rcGAN.load_from_checkpoint(cfg.checkpoint_dir + 'rcgan_gaussian_d=60/checkpoint-epoch=150.ckpt')
     model.eval().to('cpu')
 
     # model_pca_reg = rcGANwPCAReg.load_from_checkpoint(cfg.checkpoint_dir + args.exp_name + '_pca_reg/best-mse.ckpt')
@@ -99,8 +105,9 @@ if __name__ == '__main__':
     #     cfg.checkpoint_dir + args.exp_name + '_no_std_dev/best-mse.ckpt')
     # model_no_std.eval()
 
-    model_lazy_reg = rcGANwLazyRegSimple.load_from_checkpoint(
-        cfg.checkpoint_dir + args.exp_name + '_lazy_reg_P=32_freq=100/best-mse.ckpt')
+    model_lazy_reg = rcGAN.load_from_checkpoint(cfg.checkpoint_dir + 'rcgan_gaussian_d=60/checkpoint-epoch=150.ckpt')
+        # rcGANwLazyRegSimple.load_from_checkpoint(
+        # cfg.checkpoint_dir + 'rcgan_gaussian_reg_d=60_freq=100/best.ckpt')
     model_lazy_reg.eval().to('cpu')
 
     # pca_model = PCANET.load_from_checkpoint(cfg.checkpoint_dir + 'pcanet_gaussian_2/best-pca.ckpt')
@@ -117,21 +124,34 @@ if __name__ == '__main__':
     x = torch.from_numpy(np.random.multivariate_normal(mu_x, cov_x, 1000))
     x, y, mask = dt(x)
 
-    posterior = Posterior(100, mu_x, cov_x, sig_noise, y[-1].numpy())
+    posterior = Posterior(args.d, mu_x, cov_x, sig_noise, y[-1].numpy())
     e_vals, e_vecs = np.linalg.eigh(posterior.posterior_cov)
 
-    posterior_cov_hat = numpy.zeros((100, 100))
-    posterior_cov_hat_lazy_reg = numpy.zeros((100, 100))
+    posterior_cov_hat = numpy.zeros((60, 60))
+    posterior_cov_hat_lazy_reg = numpy.zeros((60, 60))
     posterior_cov_hat_no_std = numpy.zeros((100, 100))
 
+    posterior_means = np.zeros((1000, 60))
+    posterior_means_reg = np.zeros((1000, 60))
+
+    nmses = []
+    nmses_reg = []
+
     for i in range(y.shape[0]):
-        posterior_mean_hat, posterior_cov_hat_temp = compute_posterior_stats(model, y[0, :].unsqueeze(0), mask)
-        posterior_mean_hat_lazy_reg, posterior_cov_hat_lazy_reg_temp = compute_posterior_stats(model_lazy_reg, y[0, :].unsqueeze(0), mask)
-        # posterior_mean_hat_no_std, posterior_cov_hat_no_std_temp = compute_posterior_stats(model_no_std, y[0, :].unsqueeze(0), mask)
+        posterior_mean_hat, posterior_cov_hat_temp = compute_posterior_stats(model, y[i, :].unsqueeze(0), mask)
+        posterior_mean_hat_lazy_reg, posterior_cov_hat_lazy_reg_temp = compute_posterior_stats(model_lazy_reg, y[i, :].unsqueeze(0), mask)
+
+        nmses.append(nmse(x[i, :].numpy(), posterior_mean_hat, np.mean(x.numpy(), axis=0)))
+        nmses_reg.append(nmse(x[i, :].numpy(), posterior_mean_hat_lazy_reg, np.mean(x.numpy(), axis=0)))
+
+        posterior_means[i, :] = posterior_mean_hat
+        posterior_means_reg[i, :] = posterior_mean_hat_lazy_reg
 
         posterior_cov_hat += posterior_cov_hat_temp
         posterior_cov_hat_lazy_reg += posterior_cov_hat_lazy_reg_temp
-        # posterior_cov_hat_no_std += posterior_cov_hat_no_std_temp
+
+    posterior_mean_hat, _ = compute_posterior_stats(model, y[-1, :].unsqueeze(0), mask)
+    posterior_mean_hat_lazy_reg, _ = compute_posterior_stats(model_lazy_reg, y[-1, :].unsqueeze(0), mask)
 
     posterior_cov_hat = 1 / y.shape[0] * posterior_cov_hat
     posterior_cov_hat_lazy_reg = 1 / y.shape[0] * posterior_cov_hat_lazy_reg
@@ -159,7 +179,7 @@ if __name__ == '__main__':
 
     num_samps = 100
 
-    x_axis = np.arange(100) + 1
+    x_axis = np.arange(60) + 1
 
     # labels = ['True', 'rcGAN + lazy reg']
     labels = ['True', 'rcGAN', 'rcGAN + lazy reg']
@@ -167,6 +187,9 @@ if __name__ == '__main__':
 
     plt.figure()
     plt.scatter(x_axis, posterior.posterior_mean)
+    print(np.mean((posterior.posterior_mean[:, 0] - posterior_mean_hat)**2))
+    print(np.mean((posterior.posterior_mean[:, 0] - posterior_mean_hat_lazy_reg) ** 2))
+
     plt.plot(x_axis, posterior_mean_hat)
     plt.plot(x_axis, posterior_mean_hat_lazy_reg)
     # plt.plot(x_axis, posterior_mean_hat_no_std)
@@ -210,18 +233,24 @@ if __name__ == '__main__':
     # print(f'PCANET: {posterior.cov_dist(pca_cov)}')
 
     print("\nCFID")
-    print(f'rcGAN: {posterior.cfid(posterior_mean_hat, posterior_cov_hat)}')
-    print(f'rcGAN + lazy reg: {posterior.cfid(posterior_mean_hat_lazy_reg, posterior_cov_hat_lazy_reg)}')
+    rcgan_cfids = posterior.cfid(np.mean(posterior_means, axis=0), posterior_cov_hat)
+    rcgan_w_reg_cfids = posterior.cfid(np.mean(posterior_means_reg, axis=0), posterior_cov_hat_lazy_reg)
+    print(f'rcGAN: m={np.mean((posterior.posterior_mean[:, 0] - posterior_mean_hat)**2)}, c:{rcgan_cfids[1]}')
+    print(f'rcGAN + lazy reg: m={np.mean((posterior.posterior_mean[:, 0] - posterior_mean_hat_lazy_reg) ** 2)}, c:{rcgan_w_reg_cfids[1]}')
     # print(f'rcGAN + lazy reg - std.: {posterior.cfid(posterior_mean_hat_no_std, posterior_cov_hat_no_std)}')
     # print(f'PCANET: {posterior.cfid(x_hat, pca_cov)}')
 
     for i in range(5):
         plt.figure()
-        plt.scatter(x_axis, np.abs(e_vecs[:, -(i+1)]))
-        plt.plot(x_axis, np.abs(e_vecs_hat[i, :]))
-        plt.plot(x_axis, np.abs(e_vecs_hat_lazy_reg[i, :]))
+        # plt.scatter(x_axis, np.abs(e_vecs[:, -(i+1)]))
+        plt.plot(x_axis, np.abs(np.abs(e_vecs_hat[i, :]) - np.abs(e_vecs[:, -(i+1)])))
+        plt.plot(x_axis, np.abs(np.abs(e_vecs_hat_lazy_reg[i, :]) - np.abs(e_vecs[:, -(i+1)])))
         # plt.plot(x_axis, np.abs(e_vecs_hat_no_std[i, :]))
         # plt.plot(x_axis, np.abs(principle_components[0, i].numpy()))
-        plt.legend(labels)
+        plt.legend(['rcGAN', 'rcGAN + lazy reg'])
+        plt.title(f'Eigenvector Error {i+1}')
         plt.savefig(f'figs/eig_vec_compare_{i}.png')
         plt.close()
+
+    print(f'NMSE rcGAN: {np.mean(nmses)}')
+    print(f'NMSE rcGAN + reg: {np.mean(nmses_reg)}')

@@ -5,12 +5,12 @@ K: 5
 d: 10
 num_z_train: 2
 num_z_valid: 8
-num_z_pca: 32
-num_pc: 5
+num_z_pca: 600
+num_pc: 60
 pca_reg_freq: 100
 
 batch_size: 64
-num_epochs: 200
+num_epochs: 175
 
 #optimizer:
 lr: 0.001

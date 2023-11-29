@@ -15,7 +15,7 @@ class GeneratorLinear(nn.Module):
 
         self.layers_z = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(d, d),
+            nn.Linear(d, d, bias=False),
         )
 
     def forward(self, y, z):

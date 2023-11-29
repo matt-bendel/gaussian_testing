@@ -10,51 +10,51 @@ from models.architectures.gen_linear import GeneratorLinear
 from models.architectures.discriminator import Discriminator
 from torchmetrics.functional import peak_signal_noise_ratio
 
-# TODO: Try P = 5
-# TODO: Try P = 2
-# TODO: Try different reg freqs 1, 25, 50, 75, 100, 150, 200
+class Posterior:
+    def __init__(self, d, mu_x, Sig_xx, sig_noise):
+        inds = np.arange(d // 2) * 2
 
-# class Posterior:
-#     def __init__(self, d, mu_x, Sig_xx, sig_noise):
-#         inds = [0, 1, 5, 8, 9]
-#
-#         A = np.eye(d)
-#         A[inds, :] = 0
-#
-#         self.mu_x = np.expand_dims(mu_x, axis=1)
-#         self.Sig_xx = Sig_xx
-#         self.mu_y = A @ self.mu_x
-#         self.Sig_yy = A @ Sig_xx @ A.T + sig_noise * np.eye(d)
-#         self.Sig_yy_inv = np.linalg.inv(self.Sig_yy)
-#         self.Sig_xy = Sig_xx @ A.T
-#         self.Sig_yx = A @ Sig_xx
-#
-#         self.posterior_cov = self.Sig_xx - self.Sig_xy @ self.Sig_yy_inv @ self.Sig_yx
-#         self.posterior_cov_sqrt = sp.linalg.sqrtm(self.posterior_cov)
-#
-#     def cfid(self, posterior_cov_hat):
-#         cov_sum = posterior_cov_hat + self.posterior_cov
-#         posterior_prod_sqrt = sp.linalg.sqrtm(self.posterior_cov_sqrt @ posterior_cov_hat @ self.posterior_cov_sqrt)
-#
-#         return np.trace(cov_sum - 2 * posterior_prod_sqrt)
+        A = np.eye(d)
+        A[inds, :] = 0
+
+        self.mu_x = np.expand_dims(mu_x, axis=1)
+        self.Sig_xx = Sig_xx
+        self.mu_y = A @ self.mu_x
+        self.Sig_yy = A @ Sig_xx @ A.T + sig_noise * np.eye(d)
+        self.Sig_yy_inv = np.linalg.inv(self.Sig_yy)
+        self.Sig_xy = Sig_xx @ A.T
+        self.Sig_yx = A @ Sig_xx
+
+        self.posterior_cov = self.Sig_xx - self.Sig_xy @ self.Sig_yy_inv @ self.Sig_yx
+        self.posterior_cov_sqrt = sp.linalg.sqrtm(self.posterior_cov)
+
+    def cfid(self, posterior_cov_hat):
+        cov_sum = posterior_cov_hat + self.posterior_cov
+        posterior_prod_sqrt = sp.linalg.sqrtm(self.posterior_cov_sqrt @ posterior_cov_hat @ self.posterior_cov_sqrt)
+
+        return np.trace(cov_sum - 2 * posterior_prod_sqrt)
 
 
-# def compute_posterior_stats(generator, y, mask):
-#     num_z = 1000
-#
-#     gens = np.zeros((num_z, 10))
-#     for z in range(num_z):
-#         with torch.no_grad():
-#             gens[z, :] = generator.forward(y.unsqueeze(0), mask.unsqueeze(0))[0, 0, :].numpy()
-#
-#     posterior_mean_hat = np.mean(gens, axis=0)
-#
-#     gens_zero_mean = gens - posterior_mean_hat[None, :]
-#
-#     posterior_cov_hat = 1 / (gens.shape[0] - 1) * gens_zero_mean.T @ gens_zero_mean
-#
-#     return posterior_mean_hat, posterior_cov_hat
+def compute_posterior_stats(generator, y, mask, d):
+    num_z = 8
 
+    gens = np.zeros((num_z, d))
+    for z in range(num_z):
+        with torch.no_grad():
+            gens[z, :] = generator.forward(y.unsqueeze(0), mask.unsqueeze(0))[0, 0, :].numpy()
+
+    posterior_mean_hat = np.mean(gens, axis=0)
+
+    gens_zero_mean = gens - posterior_mean_hat[None, :]
+
+    posterior_cov_hat = 1 / (gens.shape[0] - 1) * gens_zero_mean.T @ gens_zero_mean
+
+    return posterior_cov_hat
+
+# TODO: Try reduce on plateau w/ cfid use 1 sample
+
+# TODO: Sweep of d
+# TODO: Sweep of frequencies 50 , 100, 200, 250, 500
 
 class rcGANwLazyRegSimple(pl.LightningModule):
     def __init__(self, args, exp_name, d):
@@ -66,12 +66,20 @@ class rcGANwLazyRegSimple(pl.LightningModule):
         self.generator = GeneratorLinear(d)
         self.discriminator = Discriminator(d)
 
-        self.beta_pca = 1e-3
+        self.beta_pca = 1
 
         self.betastd = 1
-        self.lam_eps = 1e-3
+        self.lam_eps = 0
         self.automatic_optimization = False
         self.val_outputs = []
+        mu_x = np.load(f'/Users/mattbendel/Documents/pca_gaussian/data/stats_{d}d/gt_mu.npy')
+        e_vals = np.abs(np.load(f'/Users/mattbendel/Documents/pca_gaussian/data/stats_{d}d/gt_e_vals.npy'))
+        e_vecs = np.load(f'/Users/mattbendel/Documents/pca_gaussian/data/stats_{d}d/gt_e_vecs.npy')
+
+        cov_x = e_vecs @ np.diag(e_vals) @ e_vecs.T
+        sig_noise = 0.001
+
+        self.posterior = Posterior(d, mu_x, cov_x, sig_noise)
 
         self.save_hyperparameters()  # Save passed values
 
@@ -201,6 +209,8 @@ class rcGANwLazyRegSimple(pl.LightningModule):
             w_loss = 0
             sig_loss = 0
 
+            # P_PCA = 10*K
+
             for n in range(gens_zm.shape[0]):
                 _, S, Vh = torch.linalg.svd(gens_zm[n], full_matrices=False)
 
@@ -208,26 +218,19 @@ class rcGANwLazyRegSimple(pl.LightningModule):
                 inner_product = torch.sum(Vh * current_x_xm[None, :], dim=1)
 
                 w_obj = inner_product ** 2
-                w_loss += 1 / (torch.norm(current_x_xm, p=2) ** 2 * Vh.shape[0]).detach() * w_obj.sum()  # 1e-3 for 25 iters
+                w_loss += 1 / (torch.norm(current_x_xm, p=2) ** 2 * (self.args.num_z_pca//10)).detach() * w_obj[0:self.args.num_z_pca//10].sum()  # 1e-3 for 25 iters
 
                 gens_zm_det = gens_zm[n].detach()
                 gens_zm_det[0, :] = x_zm[n, 0, :].detach()
 
-                # TODO: abs instead of square
                 if self.current_epoch >= 50:
                     inner_product_mat = 1 / self.args.num_z_pca * torch.matmul(Vh, torch.matmul(
                         torch.transpose(gens_zm_det.clone().detach(), 0, 1), torch.matmul(gens_zm_det.clone().detach(), Vh.mT)))
 
                     #cfg 1
-                    sig_diff = 1 / (torch.norm(current_x_xm, p=2) ** 2 * Vh.shape[0]).detach() * (1 - 1 / (S ** 2 + self.lam_eps) * torch.diag(inner_product_mat.clone().detach())) ** 2
+                    sig_diff = 1 / (torch.norm(current_x_xm, p=2) ** 2 * (self.args.num_z_pca//10)).detach() * (1 - 1 / (S ** 2 + self.lam_eps) * torch.diag(inner_product_mat.clone().detach())) ** 2
 
-                    # cfg 2
-                    # sig_diff = 1 / (torch.norm(current_x_xm, p=2) ** 2 * Vh.shape[0]).detach() * (S ** 2 - torch.diag(inner_product_mat.clone().detach())) ** 2
-
-                    # cfg 3
-                    # sig_diff = (S - 1 / S * torch.diag(inner_product_mat.clone().detach())) ** 2
-
-                    sig_loss += self.beta_pca * sig_diff.sum()
+                    sig_loss += self.beta_pca * sig_diff[0:self.args.num_z_pca//10].sum()
 
             w_loss_g = - self.beta_pca * w_loss
             self.log('w_loss', w_loss_g, prog_bar=True)
@@ -257,16 +260,29 @@ class rcGANwLazyRegSimple(pl.LightningModule):
         psnr_8 = peak_signal_noise_ratio(avg, x)
         psnr_1 = peak_signal_noise_ratio(gens[:, 0, :], x)
 
-        self.val_outputs.append({'psnr_8': psnr_8, 'psnr_1': psnr_1})
+        posterior_cov_hat = np.zeros((self.d, self.d))
 
-        return {'psnr_8': psnr_8, 'psnr_1': psnr_1}
+        for i in range(y.shape[0]):
+            posterior_cov_hat_temp = compute_posterior_stats(self, y[i, :, :], mask[:, 0, :], self.d)
+
+            posterior_cov_hat += posterior_cov_hat_temp
+
+        posterior_cov_hat = 1 / y.shape[0] * posterior_cov_hat
+
+        cfid = self.posterior.cfid(posterior_cov_hat)
+
+        self.val_outputs.append({'psnr_8': psnr_8, 'psnr_1': psnr_1, 'cfid': cfid})
+
+        return {'psnr_8': psnr_8, 'psnr_1': psnr_1, 'cfid': cfid}
 
     def on_validation_epoch_end(self):
         psnr_8 = torch.stack([x['psnr_8'] for x in self.val_outputs]).mean().mean()
         psnr_1 = torch.stack([x['psnr_1'] for x in self.val_outputs]).mean().mean()
+        cfid = torch.stack([x['cfid'] for x in self.val_outputs]).mean().mean()
 
         self.log('psnr_8', psnr_8)
         self.log('psnr_1', psnr_1)
+        self.log('cfid', cfid)
 
         psnr_diff = (psnr_1 + 2.5) - psnr_8
 
@@ -275,9 +291,21 @@ class rcGANwLazyRegSimple(pl.LightningModule):
 
         self.val_outputs = []
 
+    def on_train_epoch_end(self):
+        sch_g, _ = self.lr_schedulers()
+        sch_g.step(self.trainer.callback_metrics["cfid"])
+
     def configure_optimizers(self):
-        opt_g = torch.optim.Adam(self.generator.parameters(), lr=self.args.lr,
+        opt_g = torch.optim.Adam(self.generator.parameters(), lr=1e-3,
                                  betas=(self.args.beta_1, self.args.beta_2))
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            opt_g,
+            mode='min',
+            factor=0.5,
+            patience=5,
+            min_lr=5e-5,
+        )
+
         opt_d = torch.optim.Adam(self.discriminator.parameters(), lr=self.args.lr,
                                  betas=(self.args.beta_1, self.args.beta_2))
         return [[opt_g, opt_d], []]
