@@ -119,7 +119,7 @@ if __name__ == '__main__':
     sig_noise = 0.001
     dt = DataTransform(args.d)
 
-    x = torch.from_numpy(np.random.multivariate_normal(mu_x, cov_x, 1000))
+    x = torch.from_numpy(np.random.multivariate_normal(mu_x, cov_x, 100))
     x, y, mask = dt(x)
 
     posterior = Posterior(args.d, mu_x, cov_x, sig_noise, y[-1].numpy())
@@ -127,10 +127,9 @@ if __name__ == '__main__':
 
     posterior_cov_hat = numpy.zeros((args.d, args.d))
     posterior_cov_hat_lazy_reg = numpy.zeros((args.d, args.d))
-    posterior_cov_hat_no_std = numpy.zeros((100, 100))
 
-    posterior_means = np.zeros((1000, args.d))
-    posterior_means_reg = np.zeros((1000, args.d))
+    posterior_means = np.zeros((100, args.d))
+    posterior_means_reg = np.zeros((100, args.d))
 
     nmses = []
     nmses_reg = []
@@ -148,12 +147,11 @@ if __name__ == '__main__':
         posterior_cov_hat += posterior_cov_hat_temp
         posterior_cov_hat_lazy_reg += posterior_cov_hat_lazy_reg_temp
 
-    posterior_mean_hat, _ = compute_posterior_stats(model, y[-1, :].unsqueeze(0), mask)
-    posterior_mean_hat_lazy_reg, _ = compute_posterior_stats(model_lazy_reg, y[-1, :].unsqueeze(0), mask)
+    posterior_mean_hat, _ = compute_posterior_stats(model, y[-1, :].unsqueeze(0), mask, args.d)
+    posterior_mean_hat_lazy_reg, _ = compute_posterior_stats(model_lazy_reg, y[-1, :].unsqueeze(0), mask, args.d)
 
     posterior_cov_hat = 1 / y.shape[0] * posterior_cov_hat
     posterior_cov_hat_lazy_reg = 1 / y.shape[0] * posterior_cov_hat_lazy_reg
-    posterior_cov_hat_no_std = 1 / y.shape[0] * posterior_cov_hat_no_std
 
     y = y[0, :].unsqueeze(0)
     x = x[0, :].unsqueeze(0)
