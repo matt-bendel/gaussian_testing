@@ -41,7 +41,7 @@ def compute_posterior_stats(generator, y, mask, d):
     gens = np.zeros((num_z, d))
     for z in range(num_z):
         with torch.no_grad():
-            gens[z, :] = generator.forward(y.unsqueeze(0), mask.unsqueeze(0))[0, 0, :].numpy()
+            gens[z, :] = generator.forward(y.unsqueeze(0), mask.unsqueeze(0))[0, 0, :].cpu().numpy()
 
     posterior_mean_hat = np.mean(gens, axis=0)
 
