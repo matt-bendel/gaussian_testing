@@ -19,8 +19,6 @@ from models.lightning.rcGAN_no_std_dev import rcGANNoStdDev
 from models.lightning.PCANET import PCANET
 from data.lightning.GaussianDataModule import DataTransform
 
-# TODO: split cfid into mean and covariance
-# TODO: report NMSE
 class Posterior:
     def __init__(self, d, mu_x, Sig_xx, sig_noise, y):
         inds = np.arange(d // 2) * 2
@@ -63,10 +61,10 @@ def nmse(x_true, x_fake, x_m):
     return np.linalg.norm(x_true - x_fake, ord=2) ** 2 / (np.linalg.norm(x_true, ord=2) ** 2)
 
 
-def compute_posterior_stats(generator, y, mask):
+def compute_posterior_stats(generator, y, mask, d):
     num_z = 1000
 
-    gens = np.zeros((num_z, 60))
+    gens = np.zeros((num_z, d))
     for z in range(num_z):
         with torch.no_grad():
             gens[z, :] = generator.forward(y.unsqueeze(0), mask.unsqueeze(0))[0, 0, :].numpy()
@@ -92,7 +90,7 @@ if __name__ == '__main__':
         cfg = yaml.load(f, Loader=yaml.FullLoader)
         cfg = json.loads(json.dumps(cfg), object_hook=load_object)
 
-    model = rcGAN.load_from_checkpoint(cfg.checkpoint_dir + 'rcgan_gaussian_d=60/checkpoint-epoch=150.ckpt')
+    model = rcGAN.load_from_checkpoint(cfg.checkpoint_dir + f'rcgan_d={args.d}/best.ckpt')
     model.eval().to('cpu')
 
     # model_pca_reg = rcGANwPCAReg.load_from_checkpoint(cfg.checkpoint_dir + args.exp_name + '_pca_reg/best-mse.ckpt')
@@ -105,7 +103,7 @@ if __name__ == '__main__':
     #     cfg.checkpoint_dir + args.exp_name + '_no_std_dev/best-mse.ckpt')
     # model_no_std.eval()
 
-    model_lazy_reg = rcGAN.load_from_checkpoint(cfg.checkpoint_dir + 'rcgan_gaussian_d=60/checkpoint-epoch=150.ckpt')
+    model_lazy_reg = rcGANwLazyRegSimple.load_from_checkpoint(cfg.checkpoint_dir + f'rcgan_lazy_d={args.d}/best.ckpt')
         # rcGANwLazyRegSimple.load_from_checkpoint(
         # cfg.checkpoint_dir + 'rcgan_gaussian_reg_d=60_freq=100/best.ckpt')
     model_lazy_reg.eval().to('cpu')
@@ -127,19 +125,19 @@ if __name__ == '__main__':
     posterior = Posterior(args.d, mu_x, cov_x, sig_noise, y[-1].numpy())
     e_vals, e_vecs = np.linalg.eigh(posterior.posterior_cov)
 
-    posterior_cov_hat = numpy.zeros((60, 60))
-    posterior_cov_hat_lazy_reg = numpy.zeros((60, 60))
+    posterior_cov_hat = numpy.zeros((args.d, args.d))
+    posterior_cov_hat_lazy_reg = numpy.zeros((args.d, args.d))
     posterior_cov_hat_no_std = numpy.zeros((100, 100))
 
-    posterior_means = np.zeros((1000, 60))
-    posterior_means_reg = np.zeros((1000, 60))
+    posterior_means = np.zeros((1000, args.d))
+    posterior_means_reg = np.zeros((1000, args.d))
 
     nmses = []
     nmses_reg = []
 
     for i in range(y.shape[0]):
-        posterior_mean_hat, posterior_cov_hat_temp = compute_posterior_stats(model, y[i, :].unsqueeze(0), mask)
-        posterior_mean_hat_lazy_reg, posterior_cov_hat_lazy_reg_temp = compute_posterior_stats(model_lazy_reg, y[i, :].unsqueeze(0), mask)
+        posterior_mean_hat, posterior_cov_hat_temp = compute_posterior_stats(model, y[i, :].unsqueeze(0), mask, args.d)
+        posterior_mean_hat_lazy_reg, posterior_cov_hat_lazy_reg_temp = compute_posterior_stats(model_lazy_reg, y[i, :].unsqueeze(0), mask, args.d)
 
         nmses.append(nmse(x[i, :].numpy(), posterior_mean_hat, np.mean(x.numpy(), axis=0)))
         nmses_reg.append(nmse(x[i, :].numpy(), posterior_mean_hat_lazy_reg, np.mean(x.numpy(), axis=0)))
@@ -179,7 +177,7 @@ if __name__ == '__main__':
 
     num_samps = 100
 
-    x_axis = np.arange(60) + 1
+    x_axis = np.arange(args.d) + 1
 
     # labels = ['True', 'rcGAN + lazy reg']
     labels = ['True', 'rcGAN', 'rcGAN + lazy reg']
@@ -195,7 +193,7 @@ if __name__ == '__main__':
     # plt.plot(x_axis, posterior_mean_hat_no_std)
     # plt.plot(x_axis, x_hat[0, 0, :])
     plt.legend(labels)
-    plt.savefig('figs/mean_compare.png')
+    plt.savefig(f'figs/mean_compare_{args.d}.png')
     plt.close()
 
     # TODO: Semilogy
@@ -206,7 +204,7 @@ if __name__ == '__main__':
     # plt.plot(x_axis, np.where(e_vals_hat_no_std < 1e-3, 0, e_vals_hat_no_std))
     # plt.plot(x_axis, np.where(sigma_k[0, :] < 1e-3, 0, sigma_k[0, :]))
     plt.legend(labels)
-    plt.savefig('figs/eig_val_compare.png')
+    plt.savefig(f'figs/eig_val_compare_{args.d}.png')
     plt.close()
 
     plt.figure()
@@ -224,7 +222,7 @@ if __name__ == '__main__':
     # print(temp1)
     # plt.scatter([1], np.trace(pca_cov))
     plt.legend(labels)
-    plt.savefig('figs/trace_compare_rcgan.png')
+    plt.savefig(f'figs/trace_compare_rcgan_{args.d}.png')
     plt.close()
 
     # print("COV DIST")
@@ -249,7 +247,7 @@ if __name__ == '__main__':
         # plt.plot(x_axis, np.abs(principle_components[0, i].numpy()))
         plt.legend(['rcGAN', 'rcGAN + lazy reg'])
         plt.title(f'Eigenvector Error {i+1}')
-        plt.savefig(f'figs/eig_vec_compare_{i}.png')
+        plt.savefig(f'figs/eig_vec_compare_{args.d}_{i}.png')
         plt.close()
 
     print(f'NMSE rcGAN: {np.mean(nmses)}')

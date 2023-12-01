@@ -110,7 +110,7 @@ if __name__ == '__main__':
 
     for epoch in range(125, 175):
         print(epoch)
-        model = rcGAN.load_from_checkpoint(cfg.checkpoint_dir + args.exp_name + f'/checkpoint-epoch={epoch}.ckpt')
+        model = rcGANwLazyRegSimple.load_from_checkpoint(cfg.checkpoint_dir + args.exp_name + f'/checkpoint-epoch={epoch}.ckpt')
         model.eval().to('cpu')
         posterior_cov_hat = numpy.zeros((args.d, args.d))
 

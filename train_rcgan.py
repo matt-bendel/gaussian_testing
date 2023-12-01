@@ -40,10 +40,10 @@ if __name__ == '__main__':
         cfg = yaml.load(f, Loader=yaml.FullLoader)
         cfg = json.loads(json.dumps(cfg), object_hook=load_object)
 
-    model = rcGAN(cfg, args.exp_name, args.d)
+    # model = rcGAN(cfg, args.exp_name, args.d)
     # model = rcGANwPCAReg(cfg, args.exp_name)
     # model = rcGANwLazyReg(cfg, args.exp_name)
-    # model = rcGANwLazyRegSimple(cfg, args.exp_name, args.d)
+    model = rcGANwLazyRegSimple(cfg, args.exp_name, args.d)
     print("model")
     # model = rcGANNoStdDev(cfg, args.exp_name)
 

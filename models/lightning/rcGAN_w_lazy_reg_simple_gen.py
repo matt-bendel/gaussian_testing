@@ -51,9 +51,6 @@ def compute_posterior_stats(generator, y, mask, d):
 
     return posterior_cov_hat
 
-# TODO: Try reduce on plateau w/ cfid use 1 sample
-
-# TODO: Sweep of d
 # TODO: Sweep of frequencies 50 , 100, 200, 250, 500
 
 class rcGANwLazyRegSimple(pl.LightningModule):
@@ -308,4 +305,4 @@ class rcGANwLazyRegSimple(pl.LightningModule):
 
         opt_d = torch.optim.Adam(self.discriminator.parameters(), lr=self.args.lr,
                                  betas=(self.args.beta_1, self.args.beta_2))
-        return [[opt_g, opt_d], []]
+        return [[opt_g, opt_d], [scheduler, scheduler]]
