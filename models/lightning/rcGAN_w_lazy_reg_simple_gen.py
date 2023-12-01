@@ -299,8 +299,8 @@ class rcGANwLazyRegSimple(pl.LightningModule):
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
             opt_g,
             mode='min',
-            factor=0.5,
-            patience=5,
+            factor=0.75,
+            patience=10,
             min_lr=5e-5,
         )
 
