@@ -111,9 +111,9 @@ if __name__ == '__main__':
     # pca_model = PCANET.load_from_checkpoint(cfg.checkpoint_dir + 'pcanet_gaussian_2/best-pca.ckpt')
     # pca_model.eval()
 
-    mu_x = np.load(f'/Users/mattbendel/Documents/pca_gaussian/data/stats_{args.d}d/gt_mu.npy')
-    e_vals = np.abs(np.load(f'/Users/mattbendel/Documents/pca_gaussian/data/stats_{args.d}d/gt_e_vals.npy'))
-    e_vecs = np.load(f'/Users/mattbendel/Documents/pca_gaussian/data/stats_{args.d}d/gt_e_vecs.npy')
+    mu_x = np.load(f'/home/bendel.8/Git_Repos/gaussian_testing/data/stats_{args.d}d/gt_mu.npy')
+    e_vals = np.abs(np.load(f'/home/bendel.8/Git_Repos/gaussian_testing/data/stats_{args.d}d/gt_e_vals.npy'))
+    e_vecs = np.load(f'/home/bendel.8/Git_Repos/gaussian_testing/data/stats_{args.d}d/gt_e_vecs.npy')
 
     cov_x = e_vecs @ np.diag(e_vals) @ e_vecs.T
     sig_noise = 0.001
