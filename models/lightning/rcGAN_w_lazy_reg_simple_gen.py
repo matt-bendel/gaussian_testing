@@ -63,7 +63,7 @@ class rcGANwLazyRegSimple(pl.LightningModule):
         self.generator = GeneratorLinear(d)
         self.discriminator = Discriminator(d)
 
-        self.beta_pca = 1
+        self.beta_pca = 1e-3
 
         self.betastd = 1
         self.lam_eps = 0
