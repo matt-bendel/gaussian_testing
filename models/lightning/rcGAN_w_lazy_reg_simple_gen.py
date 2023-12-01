@@ -280,7 +280,7 @@ class rcGANwLazyRegSimple(pl.LightningModule):
 
         self.log('psnr_8', psnr_8)
         self.log('psnr_1', psnr_1)
-        self.log('cfid', cfid)
+        self.log('cfid', cfid, prog_bar=True)
 
         psnr_diff = (psnr_1 + 2.5) - psnr_8
 
