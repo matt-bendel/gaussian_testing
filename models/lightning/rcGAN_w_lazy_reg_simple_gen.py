@@ -69,9 +69,9 @@ class rcGANwLazyRegSimple(pl.LightningModule):
         self.lam_eps = 0
         self.automatic_optimization = False
         self.val_outputs = []
-        mu_x = np.load(f'/Users/mattbendel/Documents/pca_gaussian/data/stats_{d}d/gt_mu.npy')
-        e_vals = np.abs(np.load(f'/Users/mattbendel/Documents/pca_gaussian/data/stats_{d}d/gt_e_vals.npy'))
-        e_vecs = np.load(f'/Users/mattbendel/Documents/pca_gaussian/data/stats_{d}d/gt_e_vecs.npy')
+        mu_x = np.load(f'/home/bendel.8/Git_Repos/gaussian_testing/data/stats_{d}d/gt_mu.npy')
+        e_vals = np.abs(np.load(f'/home/bendel.8/Git_Repos/gaussian_testing/data/stats_{d}d/gt_e_vals.npy'))
+        e_vecs = np.load(f'/home/bendel.8/Git_Repos/gaussian_testing/data/stats_{d}d/gt_e_vecs.npy')
 
         cov_x = e_vecs @ np.diag(e_vals) @ e_vecs.T
         sig_noise = 0.001
