@@ -103,7 +103,7 @@ if __name__ == '__main__':
     #     cfg.checkpoint_dir + args.exp_name + '_no_std_dev/best-mse.ckpt')
     # model_no_std.eval()
 
-    model_lazy_reg = rcGANwLazyRegSimple.load_from_checkpoint(cfg.checkpoint_dir + f'rcgan_lazy_d={args.d}_freq=50/best.ckpt')
+    model_lazy_reg = rcGANwLazyRegSimple.load_from_checkpoint(cfg.checkpoint_dir + f'rcgan_lazy_d={args.d}_freq=200/best.ckpt')
         # rcGANwLazyRegSimple.load_from_checkpoint(
         # cfg.checkpoint_dir + 'rcgan_gaussian_reg_d=60_freq=100/best.ckpt')
     model_lazy_reg.eval().to('cpu')
