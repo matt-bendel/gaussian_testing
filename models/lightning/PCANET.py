@@ -27,8 +27,7 @@ class PCANET(pl.LightningModule):
         return samples
 
     def forward(self, y, mean):
-        input = torch.cat([y, mean], dim=1)
-        directions = self.pca_net(input).view(y.shape[0], self.args.K, self.d)
+        directions = self.pca_net(y, mean)
         return directions
 
     def gramm_schmidt(self, directions):
