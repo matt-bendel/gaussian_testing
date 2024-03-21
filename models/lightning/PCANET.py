@@ -39,7 +39,7 @@ class PCANET(pl.LightningModule):
                 principle_components[:, 0, :] = d / torch.norm(d, p=2, dim=1)[:, None]
                 diff_vals[:, k, :] = d
             else:
-                sum_val = torch.zeros(directions.shape[0], 10).to(directions.device)
+                sum_val = torch.zeros(directions.shape[0], self.d).to(directions.device)
                 for l in range(k):
                     detached_pc = principle_components[:, l, :].clone().detach()
                     inner_product = torch.sum(d * detached_pc, dim=1)
