@@ -63,14 +63,14 @@ class DataTransform:
         self.w_cov = torch.eye(self.M) * 0.001
 
         # Server
-        # mu = np.load(f'/home/bendel.8/Git_Repos/gaussian_testing/data/stats_{d}d/gt_mu.npy')
-        # e_vals = np.abs(np.load(f'/home/bendel.8/Git_Repos/gaussian_testing/data/stats_{d}d/gt_e_vals.npy'))
-        # e_vecs = np.load(f'/home/bendel.8/Git_Repos/gaussian_testing/data/stats_{d}d/gt_e_vecs.npy')
+        mu = np.load(f'/home/bendel.8/Git_Repos/gaussian_testing/data/stats_{d}d/gt_mu.npy')
+        e_vals = np.abs(np.load(f'/home/bendel.8/Git_Repos/gaussian_testing/data/stats_{d}d/gt_e_vals.npy'))
+        e_vecs = np.load(f'/home/bendel.8/Git_Repos/gaussian_testing/data/stats_{d}d/gt_e_vecs.npy')
 
         # Mac
-        mu = np.load(f'/Users/mattbendel/Documents/pca_gaussian/data/stats_{d}d/gt_mu.npy')
-        e_vals = np.abs(np.load(f'/Users/mattbendel/Documents/pca_gaussian/data/stats_{d}d/gt_e_vals.npy'))
-        e_vecs = np.load(f'/Users/mattbendel/Documents/pca_gaussian/data/stats_{d}d/gt_e_vecs.npy')
+        # mu = np.load(f'/Users/mattbendel/Documents/pca_gaussian/data/stats_{d}d/gt_mu.npy')
+        # e_vals = np.abs(np.load(f'/Users/mattbendel/Documents/pca_gaussian/data/stats_{d}d/gt_e_vals.npy'))
+        # e_vecs = np.load(f'/Users/mattbendel/Documents/pca_gaussian/data/stats_{d}d/gt_e_vecs.npy')
 
         self.mu = mu
         self.cov = e_vecs @ np.diag(e_vals) @ e_vecs.T
@@ -95,14 +95,14 @@ class GaussianDataModule(pl.LightningDataModule):
         self.batch_size = 64
         self.num_workers = 1
         # Server
-        # mu = np.load(f'/home/bendel.8/Git_Repos/gaussian_testing/data/stats_{d}d/gt_mu.npy')
-        # e_vals = np.abs(np.load(f'/home/bendel.8/Git_Repos/gaussian_testing/data/stats_{d}d/gt_e_vals.npy'))
-        # e_vecs = np.load(f'/home/bendel.8/Git_Repos/gaussian_testing/data/stats_{d}d/gt_e_vecs.npy')
+        mu = np.load(f'/home/bendel.8/Git_Repos/gaussian_testing/data/stats_{d}d/gt_mu.npy')
+        e_vals = np.abs(np.load(f'/home/bendel.8/Git_Repos/gaussian_testing/data/stats_{d}d/gt_e_vals.npy'))
+        e_vecs = np.load(f'/home/bendel.8/Git_Repos/gaussian_testing/data/stats_{d}d/gt_e_vecs.npy')
 
         # Mac
-        mu = np.load(f'/Users/mattbendel/Documents/pca_gaussian/data/stats_{d}d/gt_mu.npy')
-        e_vals = np.abs(np.load(f'/Users/mattbendel/Documents/pca_gaussian/data/stats_{d}d/gt_e_vals.npy'))
-        e_vecs = np.load(f'/Users/mattbendel/Documents/pca_gaussian/data/stats_{d}d/gt_e_vecs.npy')
+        # mu = np.load(f'/Users/mattbendel/Documents/pca_gaussian/data/stats_{d}d/gt_mu.npy')
+        # e_vals = np.abs(np.load(f'/Users/mattbendel/Documents/pca_gaussian/data/stats_{d}d/gt_e_vals.npy'))
+        # e_vecs = np.load(f'/Users/mattbendel/Documents/pca_gaussian/data/stats_{d}d/gt_e_vecs.npy')
 
         self.d = d
         self.mu = mu
