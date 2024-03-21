@@ -24,6 +24,7 @@ class PCALinear(nn.Module):
 
     def __init__(self, d):
         super().__init__()
+        self.d = d
         self.layers = nn.Sequential(
             nn.Flatten(),
             nn.Linear(2*d, d * d),
