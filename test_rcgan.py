@@ -213,7 +213,7 @@ if __name__ == '__main__':
 
     pca_cov = np.zeros((args.d, args.d))
     for i in range(principle_components.shape[1]):
-        pc_np = np.expand_dims(principle_components[0, 0, :].numpy(), axis=1)
+        pc_np = np.expand_dims(principle_components[0, i, :].numpy(), axis=1)
         pca_cov += sigma_k[0, i] * pc_np @ pc_np.T
 
     # temp1, temp2 = np.linalg.eigh(pca_cov)
