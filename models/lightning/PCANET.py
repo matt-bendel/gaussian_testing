@@ -3,18 +3,18 @@ import torch
 import pytorch_lightning as pl
 from torch.nn import functional as F
 
-from models.architectures.generator import Generator
+from models.architectures.pca_gens_linear import MMSELinear, PCALinear
 from torchmetrics.functional import peak_signal_noise_ratio
 
 class PCANET(pl.LightningModule):
-    def __init__(self, args, exp_name):
+    def __init__(self, args, exp_name, d):
         super().__init__()
         self.args = args
         self.exp_name = exp_name
-        self.d = 10
+        self.d = d
 
-        self.pca_net = Generator(out_mult=self.args.K)
-        self.mean_net = Generator(in_mult=1)
+        self.pca_net = PCALinear(d)
+        self.mean_net = MMSELinear(d)
 
         self.automatic_optimization = False
         self.val_outputs = []

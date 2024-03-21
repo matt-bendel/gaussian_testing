@@ -26,9 +26,10 @@ if __name__ == '__main__':
         cfg = yaml.load(f, Loader=yaml.FullLoader)
         cfg = json.loads(json.dumps(cfg), object_hook=load_object)
 
-    model = PCANET(cfg, args.exp_name)
+    cfg.K = args.d
+    model = PCANET(cfg, args.exp_name, args.d)
 
-    dm = GaussianDataModule()
+    dm = GaussianDataModule(args.d)
 
     wandb_logger = WandbLogger(
         project="pca_exps",
@@ -59,7 +60,7 @@ if __name__ == '__main__':
         save_top_k=1
     )
 
-    trainer = pl.Trainer(accelerator="cpu", devices=args.num_gpus,# strategy='ddp' if not args.dp else 'dp',
+    trainer = pl.Trainer(accelerator="gpu", devices=args.num_gpus, strategy='ddp',
                          max_epochs=cfg.num_epochs, callbacks=[checkpoint_callback_epoch],
                          num_sanity_val_steps=2, profiler="simple", logger=wandb_logger, benchmark=False, log_every_n_steps=10)
 
