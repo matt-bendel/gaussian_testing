@@ -46,11 +46,11 @@ class Posterior:
         return rho
 
     def cfid(self, pmh, pch):
-        mu_dist = np.linalg.norm(self.mu_x[:, 0] - pmh, ord=2) ** 2
+        # mu_dist = np.linalg.norm(self.mu_x[:, 0] - pmh, ord=2) ** 2
         cov_sum = pch + self.posterior_cov
         posterior_prod_sqrt = sp.linalg.sqrtm(self.posterior_cov_sqrt @ pch @ self.posterior_cov_sqrt)
 
-        return mu_dist, np.trace(cov_sum - 2 * posterior_prod_sqrt)
+        return np.trace(cov_sum - 2 * posterior_prod_sqrt)
 
 
 def load_object(dct):
@@ -229,10 +229,10 @@ if __name__ == '__main__':
     # print(f'PCANET: {posterior.cov_dist(pca_cov)}')
 
     print("\nCFID")
-    rcgan_cfids = posterior.cfid(np.mean(posterior_means, axis=0), posterior_cov_hat)
-    rcgan_w_reg_cfids = posterior.cfid(np.mean(posterior_means_reg, axis=0), posterior_cov_hat_lazy_reg)
-    print(f'rcGAN: m={np.mean((posterior.posterior_mean[:, 0] - posterior_mean_hat)**2)}, c:{rcgan_cfids[1]}')
-    print(f'rcGAN + lazy reg: m={np.mean((posterior.posterior_mean[:, 0] - posterior_mean_hat_lazy_reg) ** 2)}, c:{rcgan_w_reg_cfids[1]}')
+    # rcgan_cfids = posterior.cfid(np.mean(posterior_means, axis=0), posterior_cov_hat)
+    # rcgan_w_reg_cfids = posterior.cfid(np.mean(posterior_means_reg, axis=0), posterior_cov_hat_lazy_reg)
+    # print(f'rcGAN: m={np.mean((posterior.posterior_mean[:, 0] - posterior_mean_hat)**2)}, c:{rcgan_cfids[1]}')
+    # print(f'rcGAN + lazy reg: m={np.mean((posterior.posterior_mean[:, 0] - posterior_mean_hat_lazy_reg) ** 2)}, c:{rcgan_w_reg_cfids[1]}')
     # print(f'rcGAN + lazy reg - std.: {posterior.cfid(posterior_mean_hat_no_std, posterior_cov_hat_no_std)}')
     print(f'PCANET: {posterior.cfid(x_hat, pca_cov)}')
 
