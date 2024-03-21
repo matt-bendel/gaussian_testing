@@ -108,8 +108,8 @@ if __name__ == '__main__':
         # cfg.checkpoint_dir + 'rcgan_gaussian_reg_d=60_freq=100/best.ckpt')
     model_lazy_reg.eval().to('cpu')
 
-    # pca_model = PCANET.load_from_checkpoint(cfg.checkpoint_dir + 'pcanet_gaussian_2/best-pca.ckpt')
-    # pca_model.eval()
+    pca_model = PCANET.load_from_checkpoint(cfg.checkpoint_dir + f'nppc_d{args.d}/best-pca.ckpt')
+    pca_model.eval()
 
     mu_x = np.load(f'/home/bendel.8/Git_Repos/gaussian_testing/data/stats_{args.d}d/gt_mu.npy')
     e_vals = np.abs(np.load(f'/home/bendel.8/Git_Repos/gaussian_testing/data/stats_{args.d}d/gt_e_vals.npy'))
@@ -156,17 +156,17 @@ if __name__ == '__main__':
     y = y[0, :].unsqueeze(0)
     x = x[0, :].unsqueeze(0)
 
-    # with torch.no_grad():
-    #     x_hat = pca_model.mean_net(y.unsqueeze(0)).unsqueeze(1)
-    #     directions = pca_model.forward(y.unsqueeze(0), x_hat)
-    #     principle_components, diff_vals = pca_model.gramm_schmidt(directions)
-    #     sigma_k = torch.zeros(directions.shape[0], 100).to(directions.device)
-    #
-    #     for k in range(directions.shape[1]):
-    #         sigma_k[:, k] = torch.norm(diff_vals[:, k, :], p=2, dim=1) ** 2
-    #
-    # x_hat = x_hat.numpy()
-    # sigma_k = sigma_k.numpy()
+    with torch.no_grad():
+        x_hat = pca_model.mean_net(y.unsqueeze(0)).unsqueeze(1)
+        directions = pca_model.forward(y.unsqueeze(0), x_hat)
+        principle_components, diff_vals = pca_model.gramm_schmidt(directions)
+        sigma_k = torch.zeros(directions.shape[0], args.d).to(directions.device)
+
+        for k in range(directions.shape[1]):
+            sigma_k[:, k] = torch.norm(diff_vals[:, k, :], p=2, dim=1) ** 2
+
+    x_hat = x_hat.numpy()
+    sigma_k = sigma_k.numpy()
 
     # swap w/ SVD of data matrix
     _, e_vals_hat, e_vecs_hat = np.linalg.svd(posterior_cov_hat)
@@ -211,11 +211,11 @@ if __name__ == '__main__':
     plt.scatter([1], np.trace(posterior_cov_hat_lazy_reg))
     # plt.scatter([1], np.trace(posterior_cov_hat_no_std))
 
-    # pca_cov = np.zeros((100, 100))
-    # for i in range(principle_components.shape[1]):
-    #     pc_np = np.expand_dims(principle_components[0, 0, :].numpy(), axis=1)
-    #     pca_cov += sigma_k[0, i] * pc_np @ pc_np.T
-    #
+    pca_cov = np.zeros((args.d, args.d))
+    for i in range(principle_components.shape[1]):
+        pc_np = np.expand_dims(principle_components[0, 0, :].numpy(), axis=1)
+        pca_cov += sigma_k[0, i] * pc_np @ pc_np.T
+
     # temp1, temp2 = np.linalg.eigh(pca_cov)
     # print(temp1)
     # plt.scatter([1], np.trace(pca_cov))
@@ -234,7 +234,7 @@ if __name__ == '__main__':
     print(f'rcGAN: m={np.mean((posterior.posterior_mean[:, 0] - posterior_mean_hat)**2)}, c:{rcgan_cfids[1]}')
     print(f'rcGAN + lazy reg: m={np.mean((posterior.posterior_mean[:, 0] - posterior_mean_hat_lazy_reg) ** 2)}, c:{rcgan_w_reg_cfids[1]}')
     # print(f'rcGAN + lazy reg - std.: {posterior.cfid(posterior_mean_hat_no_std, posterior_cov_hat_no_std)}')
-    # print(f'PCANET: {posterior.cfid(x_hat, pca_cov)}')
+    print(f'PCANET: {posterior.cfid(x_hat, pca_cov)}')
 
     for i in range(5):
         plt.figure()
