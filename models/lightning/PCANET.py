@@ -117,7 +117,7 @@ class PCANET(pl.LightningModule):
             # W norms loss
             # ------------
             second_moment_mse = (w_norms.pow(2) - err_proj.detach().pow(2)).pow(2)
-            objective = reconst_err.mean() + 1e-1 * second_moment_mse.mean()
+            objective = reconst_err.mean() + 1e-2 * second_moment_mse.mean()
 
             #
             # sigma_loss = torch.zeros(directions.shape[0]).to(directions.device)
