@@ -108,7 +108,7 @@ if __name__ == '__main__':
         # cfg.checkpoint_dir + 'rcgan_gaussian_reg_d=60_freq=100/best.ckpt')
     model_lazy_reg.eval().to('cpu')
 
-    pca_model = PCANET.load_from_checkpoint(cfg.checkpoint_dir + f'nppc_ours_d{args.d}/best-pca.ckpt')
+    pca_model = PCANET.load_from_checkpoint(cfg.checkpoint_dir + f'nppc_d{args.d}/best-pca.ckpt')
     pca_model.eval()
 
     mu_x = np.load(f'/home/bendel.8/Git_Repos/gaussian_testing/data/stats_{args.d}d/gt_mu.npy')
@@ -158,18 +158,18 @@ if __name__ == '__main__':
 
     with torch.no_grad():
         x_hat = pca_model.mean_net(y.unsqueeze(0)).unsqueeze(1)
-        directions = pca_model.forward(y.unsqueeze(0), x_hat)
-        # w_mat = pca_model.gram_schmidt(pca_model.forward(y.unsqueeze(0), x_hat))
-        # w_norms = w_mat.norm(dim=2)
-        # principle_components = w_mat / w_norms[:, :, None]
+        # directions = pca_model.forward(y.unsqueeze(0), x_hat)
+        w_mat = pca_model.gram_schmidt(pca_model.forward(y.unsqueeze(0), x_hat))
+        w_norms = w_mat.norm(dim=2)
+        principle_components = w_mat / w_norms[:, :, None]
 
-        principle_components, diff_vals = pca_model.gramm_schmidt(directions)
-        sigma_k = torch.zeros(directions.shape[0], args.d).to(directions.device)
-
-        for k in range(directions.shape[1]):
-            sigma_k[:, k] = torch.norm(diff_vals[:, k, :], p=2, dim=1) ** 2
-
-        # sigma_k = w_norms ** 2
+        # principle_components, diff_vals = pca_model.gramm_schmidt(directions)
+        # sigma_k = torch.zeros(directions.shape[0], args.d).to(directions.device)
+        #
+        # for k in range(directions.shape[1]):
+        #     sigma_k[:, k] = torch.norm(diff_vals[:, k, :], p=2, dim=1) ** 2
+        #
+        sigma_k = w_norms ** 2
 
     print(torch.sum(sigma_k))
     print(np.trace(posterior.posterior_cov))
