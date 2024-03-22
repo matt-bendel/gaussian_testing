@@ -164,7 +164,7 @@ if __name__ == '__main__':
         w_mat_ = w_mat.flatten(2)
         w_norms = w_mat_.norm(dim=2)
         principle_components = w_mat_ / w_norms[:, :, None]
-        sigma_k = w_norms ** 3
+        sigma_k = w_norms ** 2
 
     x_hat = x_hat.numpy()
     sigma_k = sigma_k.numpy()
