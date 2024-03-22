@@ -117,7 +117,7 @@ class PCANET(pl.LightningModule):
             # W norms loss
             # ------------
             second_moment_mse = (w_norms.pow(2) - err_proj.detach().pow(2)).pow(2)
-            objective = reconst_err.mean() + 1e-2 * second_moment_mse.mean()
+            objective = reconst_err.mean() + 1e-1 * second_moment_mse.mean()
 
             #
             # sigma_loss = torch.zeros(directions.shape[0]).to(directions.device)
@@ -186,16 +186,12 @@ class PCANET(pl.LightningModule):
             ## W norms loss
             ## ------------
             second_moment_mse = (w_norms.pow(2) - err_proj.detach().pow(2)).pow(2)
-
-            second_moment_loss_lambda = -1 + 2 * self.global_step / self.second_moment_loss_grace
-            second_moment_loss_lambda = max(min(second_moment_loss_lambda, 1), 1e-6)
-            second_moment_loss_lambda *= self.second_moment_loss_lambda
-            objective = reconst_err.mean() + second_moment_loss_lambda * second_moment_mse.mean()
+            objective = reconst_err.mean() + 1e-1 * second_moment_mse.mean()
 
             self.log('w_loss_val', reconst_err.mean(), on_step=True, on_epoch=False, prog_bar=True)
             self.log('sigma_loss_val', second_moment_mse.mean(), on_step=True, on_epoch=False, prog_bar=True)
 
-            self.val_outputs.append({'w_val': reconst_err.mean(), 'psnr_val': second_moment_mse.mean()})
+            self.val_outputs.append({'w_val': objective, 'psnr_val': second_moment_mse.mean()})
 
             return {'w_loss_val': reconst_err.mean(), 'sigma_loss_val': second_moment_mse.mean()}
         else:
