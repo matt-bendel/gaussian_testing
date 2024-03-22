@@ -70,10 +70,12 @@ class PCANET(pl.LightningModule):
 
         self.log('mu_loss', mu_loss, prog_bar=True)
 
-        if self.current_epoch >= 10:
+        if self.current_epoch >= 0:
             x_hat = x_hat.clone().detach()
 
+            print('in')
             directions = self.forward(y, x_hat)
+            print('out')
             principle_components, diff_vals = self.gramm_schmidt(directions)
 
             sigma_loss = torch.zeros(directions.shape[0]).to(directions.device)
