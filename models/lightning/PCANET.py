@@ -30,6 +30,23 @@ class PCANET(pl.LightningModule):
         directions = self.pca_net(y, mean)
         return directions
 
+    def gram_schmidt(self, x):
+        x_shape = x.shape
+
+        x_orth = []
+        proj_vec_list = []
+        for i in range(x.shape[1]):
+            w = x[:, i, :]
+            for w2 in proj_vec_list:
+                w = w - w2 * torch.sum(w * w2, dim=-1, keepdim=True)
+            w_hat = w.detach() / w.detach().norm(dim=-1, keepdim=True)
+
+            x_orth.append(w)
+            proj_vec_list.append(w_hat)
+
+        x_orth = torch.stack(x_orth, dim=1).view(*x_shape)
+        return x_orth
+
     def gramm_schmidt(self, directions):
         principle_components = torch.zeros(directions.shape).to(directions.device)
         diff_vals = torch.zeros(directions.shape).to(directions.device)
@@ -75,7 +92,7 @@ class PCANET(pl.LightningModule):
 
             print('in')
             directions = self.forward(y, x_hat)
-            principle_components, diff_vals = self.gramm_schmidt(directions)
+            principle_components, diff_vals = self.gram_schmidt(directions)
             print('out')
 
             sigma_loss = torch.zeros(directions.shape[0]).to(directions.device)
