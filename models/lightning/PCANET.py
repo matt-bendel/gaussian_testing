@@ -70,7 +70,7 @@ class PCANET(pl.LightningModule):
 
         self.log('mu_loss', mu_loss, prog_bar=True)
 
-        if self.current_epoch >= 20:
+        if self.current_epoch >= 10:
             x_hat = x_hat.clone().detach()
 
             directions = self.forward(y, x_hat)
@@ -110,7 +110,7 @@ class PCANET(pl.LightningModule):
         x_hat = self.mean_net(y).unsqueeze(1)
         # x_hat = self.readd_measures(x_hat, y, mask)
 
-        if self.current_epoch >= 20:
+        if self.current_epoch >= 10:
             directions = self.forward(y, x_hat)
             principle_components, diff_vals = self.gramm_schmidt(directions)
 
@@ -146,7 +146,7 @@ class PCANET(pl.LightningModule):
         psnr_val = torch.stack([x['psnr_val'] for x in self.val_outputs]).mean().mean()
         self.log('psnr_val', psnr_val)
 
-        if self.current_epoch >= 20:
+        if self.current_epoch >= 10:
             w_val = torch.stack([x['w_val'] for x in self.val_outputs]).mean().mean()
             self.log('w_val', w_val)
         else:
