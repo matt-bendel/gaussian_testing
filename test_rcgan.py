@@ -108,7 +108,7 @@ if __name__ == '__main__':
         # cfg.checkpoint_dir + 'rcgan_gaussian_reg_d=60_freq=100/best.ckpt')
     model_lazy_reg.eval().to('cpu')
 
-    pca_model = PCANET.load_from_checkpoint(cfg.checkpoint_dir + f'nppc_d{args.d}/best-pca.ckpt')
+    pca_model = PCANET.load_from_checkpoint(cfg.checkpoint_dir + f'nppc_ours_d{args.d}/best-pca.ckpt')
     pca_model.eval()
 
     mu_x = np.load(f'/home/bendel.8/Git_Repos/gaussian_testing/data/stats_{args.d}d/gt_mu.npy')
