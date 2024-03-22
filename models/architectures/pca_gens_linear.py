@@ -27,7 +27,9 @@ class PCALinear(nn.Module):
         self.d = d
         self.layers = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(2*d, d * d),
+            nn.Linear(2 * d, d * d // 2),
+            nn.LeakyReLU(negative_slope=0.2),
+            nn.Linear(d * d // 2, d * d)
         )
 
     def forward(self, y, x_hat):
