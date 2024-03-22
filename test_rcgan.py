@@ -163,12 +163,16 @@ if __name__ == '__main__':
         # w_norms = w_mat.norm(dim=2)
         # principle_components = w_mat / w_norms[:, :, None]
 
-        sigma_k = w_norms ** 2
+        principle_components, diff_vals = pca_model.gramm_schmidt(directions)
+        sigma_k = torch.zeros(directions.shape[0], args.d).to(directions.device)
+
+        for k in range(directions.shape[1]):
+            sigma_k[:, k] = torch.norm(diff_vals[:, k, :], p=2, dim=1) ** 2
+
+        # sigma_k = w_norms ** 2
 
     print(torch.sum(sigma_k))
     print(np.trace(posterior.posterior_cov))
-
-    torch.sort()
 
     x_hat = x_hat.numpy()
     sigma_k = sigma_k.numpy()
