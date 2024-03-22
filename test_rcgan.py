@@ -165,7 +165,7 @@ if __name__ == '__main__':
 
         sigma_k = w_norms ** 2
 
-    print(sigma_k)
+    print(torch.sort(sigma_k))
     print(e_vals)
     x_hat = x_hat.numpy()
     sigma_k = sigma_k.numpy()
