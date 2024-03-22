@@ -137,7 +137,7 @@ class PCANET(pl.LightningModule):
         x_hat = self.mean_net(y).unsqueeze(1)
         # x_hat = self.readd_measures(x_hat, y, mask)
 
-        if self.current_epoch >= 100:
+        if self.current_epoch >= 10:
             x_hat = x_hat.clone().detach()
 
             # directions = self.forward(y, x_hat)
