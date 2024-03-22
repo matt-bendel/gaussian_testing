@@ -159,11 +159,12 @@ if __name__ == '__main__':
     with torch.no_grad():
         x_hat = pca_model.mean_net(y.unsqueeze(0)).unsqueeze(1)
         directions = pca_model.forward(y.unsqueeze(0), x_hat)
-        principle_components, diff_vals = pca_model.gramm_schmidt(directions)
-        sigma_k = torch.zeros(directions.shape[0], args.d).to(directions.device)
+        w_mat = pca_model.gram_schmidt(pca_model.forward(y, x_hat))
 
-        for k in range(directions.shape[1]):
-            sigma_k[:, k] = torch.norm(diff_vals[:, k, :], p=2, dim=1) ** 2
+        w_mat_ = w_mat.flatten(2)
+        w_norms = w_mat_.norm(dim=2)
+        principle_components = w_mat_ / w_norms[:, :, None]
+        sigma_k = w_norms ** 3
 
     x_hat = x_hat.numpy()
     sigma_k = sigma_k.numpy()
