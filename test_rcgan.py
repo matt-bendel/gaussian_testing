@@ -174,9 +174,6 @@ if __name__ == '__main__':
     print(torch.sum(sigma_k).numpy())
     print(np.trace(posterior.posterior_cov))
 
-    print(np.sort(sigma_k.numpy()))
-    print(e_vals)
-
     x_hat = x_hat.numpy()
     sigma_k = sigma_k.numpy()
 
@@ -190,7 +187,7 @@ if __name__ == '__main__':
     x_axis = np.arange(args.d) + 1
 
     # labels = ['True', 'rcGAN + lazy reg']
-    labels = ['True', 'rcGAN', 'rcGAN + lazy reg']
+    labels = ['True', 'rcGAN', 'rcGAN + lazy reg', 'NPPC']
     # labels = ['True', 'rcGAN', 'rcGAN + lazy reg', 'rcGAN + lazy reg - std.', 'PCANET']
 
     plt.figure()
@@ -210,7 +207,7 @@ if __name__ == '__main__':
     plt.plot(x_axis, np.where(e_vals_hat < 1e-3, 0, e_vals_hat))
     plt.plot(x_axis, np.where(e_vals_hat_lazy_reg < 1e-3, 0, e_vals_hat_lazy_reg))
     # plt.plot(x_axis, np.where(e_vals_hat_no_std < 1e-3, 0, e_vals_hat_no_std))
-    # plt.plot(x_axis, np.where(sigma_k[0, :] < 1e-3, 0, sigma_k[0, :]))
+    plt.plot(x_axis, np.where(sigma_k[0, :] < 1e-3, 0, sigma_k[0, :]))
     plt.legend(labels)
     plt.savefig(f'figs/eig_val_compare_{args.d}.png')
     plt.close()
@@ -226,9 +223,11 @@ if __name__ == '__main__':
         pc_np = np.expand_dims(principle_components[0, i, :].numpy(), axis=1)
         pca_cov += sigma_k[0, i] * pc_np @ pc_np.T
 
+    _, e_vals_nppc, e_vecs_nppcs = np.linalg.svd(pca_cov)
+
     # temp1, temp2 = np.linalg.eigh(pca_cov)
     # print(temp1)
-    # plt.scatter([1], np.trace(pca_cov))
+    plt.scatter([1], np.trace(pca_cov))
     plt.legend(labels)
     plt.savefig(f'figs/trace_compare_rcgan_{args.d}.png')
     plt.close()
@@ -253,7 +252,7 @@ if __name__ == '__main__':
         plt.plot(x_axis, np.abs(np.abs(e_vecs_hat_lazy_reg[i, :]) - np.abs(e_vecs[:, -(i+1)])))
         # plt.plot(x_axis, np.abs(e_vecs_hat_no_std[i, :]))
         # plt.plot(x_axis, np.abs(principle_components[0, i].numpy()))
-        plt.legend(['rcGAN', 'rcGAN + lazy reg'])
+        plt.legend(['rcGAN', 'rcGAN + lazy reg', 'NPPC'])
         plt.title(f'Eigenvector Error {i+1}')
         plt.savefig(f'figs/eig_vec_compare_{args.d}_{i}.png')
         plt.close()
