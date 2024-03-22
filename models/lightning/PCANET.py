@@ -32,6 +32,27 @@ class PCANET(pl.LightningModule):
         directions = self.pca_net(y, mean)
         return directions
 
+    def gramm_schmidt(self, directions):
+        principle_components = torch.zeros(directions.shape).to(directions.device)
+        diff_vals = torch.zeros(directions.shape).to(directions.device)
+        for k in range(directions.shape[1]):
+            d = directions[:, k, :].clone()
+            if k == 0:
+                principle_components[:, 0, :] = d / torch.norm(d, p=2, dim=1)[:, None]
+                diff_vals[:, k, :] = d
+            else:
+                sum_val = torch.zeros(directions.shape[0], self.d).to(directions.device)
+                for l in range(k):
+                    detached_pc = principle_components[:, l, :].clone().detach()
+                    inner_product = torch.sum(d * detached_pc, dim=1)
+                    sum_val = sum_val + inner_product[:, None] * detached_pc
+
+                diff_vals[:, k, :] = d - sum_val
+                diff_val_clone = diff_vals[:, k, :].clone()
+                principle_components[:, k, :] = diff_val_clone / torch.norm(diff_val_clone, p=2, dim=1)[:, None]
+
+        return principle_components, diff_vals
+
     def gram_schmidt(self, x):
         x_shape = x.shape
 

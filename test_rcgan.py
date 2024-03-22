@@ -158,15 +158,18 @@ if __name__ == '__main__':
 
     with torch.no_grad():
         x_hat = pca_model.mean_net(y.unsqueeze(0)).unsqueeze(1)
-        # directions = pca_model.forward(y.unsqueeze(0), x_hat)
-        w_mat = pca_model.gram_schmidt(pca_model.forward(y.unsqueeze(0), x_hat))
-        w_norms = w_mat.norm(dim=2)
-        principle_components = w_mat / w_norms[:, :, None]
+        directions = pca_model.forward(y.unsqueeze(0), x_hat)
+        # w_mat = pca_model.gram_schmidt(pca_model.forward(y.unsqueeze(0), x_hat))
+        # w_norms = w_mat.norm(dim=2)
+        # principle_components = w_mat / w_norms[:, :, None]
 
         sigma_k = w_norms ** 2
 
     print(torch.sum(sigma_k))
     print(np.trace(posterior.posterior_cov))
+
+    torch.sort()
+
     x_hat = x_hat.numpy()
     sigma_k = sigma_k.numpy()
 
