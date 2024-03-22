@@ -138,30 +138,45 @@ class PCANET(pl.LightningModule):
         # x_hat = self.readd_measures(x_hat, y, mask)
 
         if self.current_epoch >= 100:
-            directions = self.forward(y, x_hat)
-            principle_components, diff_vals = self.gramm_schmidt(directions)
+            x_hat = x_hat.clone().detach()
 
-            psnr_val = peak_signal_noise_ratio(x_hat, x)
+            # directions = self.forward(y, x_hat)
+            # principle_components = self.gramm_schmidt(directions)
 
-            sigma_loss = torch.zeros(directions.shape[0]).to(directions.device)
-            w_loss = torch.zeros(directions.shape[0]).to(directions.device)
-            for k in range(directions.shape[1]):
-                w_t_ei = torch.sum(principle_components[:, k, :] * (x - x_hat)[:, 0, :], dim=1)
-                w_t_ei_2 = w_t_ei ** 2
+            w_mat = self.gram_schmidt(self.forward(y, x_hat))
 
-                sigma_loss += (torch.sum(diff_vals[:, k, :] * diff_vals[:, k, :],
-                                         dim=1) - w_t_ei.clone().detach() ** 2) ** 2
-                w_loss += w_t_ei_2
+            w_mat_ = w_mat.flatten(2)
+            w_norms = w_mat_.norm(dim=2)
+            w_hat_mat = w_mat_ / w_norms[:, :, None]
 
-            sigma_loss = sigma_loss.sum()
-            w_loss = - w_loss.sum()
+            err = (x - x_hat).flatten(1)
 
-            self.log('w_loss_val', w_loss, on_step=True, on_epoch=False, prog_bar=True)
-            self.log('sigma_loss_val', sigma_loss, on_step=True, on_epoch=False, prog_bar=True)
+            ## Normalizing by the error's norm
+            ## -------------------------------
+            err_norm = err.norm(dim=1)
+            err = err / err_norm[:, None]
+            w_norms = w_norms / err_norm[:, None]
 
-            self.val_outputs.append({'w_val': w_loss, 'psnr_val': psnr_val})
+            ## W hat loss
+            ## ----------
+            err_proj = torch.einsum('bki,bi->bk', w_hat_mat, err)
+            reconst_err = 1 - err_proj.pow(2).sum(dim=1)
 
-            return {'w_loss_val': w_loss, 'sigma_loss_val': sigma_loss, 'psnr_val': psnr_val}
+            ## W norms loss
+            ## ------------
+            second_moment_mse = (w_norms.pow(2) - err_proj.detach().pow(2)).pow(2)
+
+            second_moment_loss_lambda = -1 + 2 * self.global_step / self.second_moment_loss_grace
+            second_moment_loss_lambda = max(min(second_moment_loss_lambda, 1), 1e-6)
+            second_moment_loss_lambda *= self.second_moment_loss_lambda
+            objective = reconst_err.mean() + second_moment_loss_lambda * second_moment_mse.mean()
+
+            self.log('w_loss_val', reconst_err.mean(), on_step=True, on_epoch=False, prog_bar=True)
+            self.log('sigma_loss_val', second_moment_mse.mean(), on_step=True, on_epoch=False, prog_bar=True)
+
+            self.val_outputs.append({'w_val': reconst_err.mean(), 'psnr_val': second_moment_mse.mean()})
+
+            return {'w_loss_val': reconst_err.mean(), 'sigma_loss_val': second_moment_mse.mean()}
         else:
             psnr_val = peak_signal_noise_ratio(x_hat, x)
 
@@ -170,14 +185,13 @@ class PCANET(pl.LightningModule):
             return {'psnr_val': psnr_val}
 
     def on_validation_epoch_end(self):
-        psnr_val = torch.stack([x['psnr_val'] for x in self.val_outputs]).mean().mean()
-        self.log('psnr_val', psnr_val)
-
-        # if self.current_epoch >= 10:
-        #     w_val = torch.stack([x['w_val'] for x in self.val_outputs]).mean().mean()
-        #     self.log('w_val', w_val)
-        # else:
-        #     self.log('w_val', 10000000)
+        if self.current_epoch >= 10:
+            w_val = torch.stack([x['w_val'] for x in self.val_outputs]).mean().mean()
+            self.log('w_val', w_val)
+        else:
+            psnr_val = torch.stack([x['psnr_val'] for x in self.val_outputs]).mean().mean()
+            self.log('psnr_val', psnr_val)
+            self.log('w_val', 10000000)
 
         self.val_outputs = []
 
