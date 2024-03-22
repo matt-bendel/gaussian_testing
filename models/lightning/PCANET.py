@@ -13,7 +13,7 @@ class PCANET(pl.LightningModule):
         self.exp_name = exp_name
         self.d = d
         self.second_moment_loss_lambda = 1e-1
-        self.second_moment_loss_grace = 200
+        self.second_moment_loss_grace = 3500
 
         self.pca_net = PCALinear(d)
         self.mean_net = MMSELinear(d)
@@ -68,19 +68,17 @@ class PCANET(pl.LightningModule):
 
         self.log('mu_loss', mu_loss, prog_bar=True)
 
-        if self.current_epoch >= 0:
+        if self.current_epoch >= 10:
             x_hat = x_hat.clone().detach()
 
             # directions = self.forward(y, x_hat)
-            # principle_components = self.gram_schmidt(directions)
+            # principle_components = self.gramm_schmidt(directions)
 
-            print('in')
             w_mat = self.gram_schmidt(self.forward(y, x_hat))
 
             w_mat_ = w_mat.flatten(2)
             w_norms = w_mat_.norm(dim=2)
             w_hat_mat = w_mat_ / w_norms[:, :, None]
-            print('out')
 
             err = (x - x_hat).flatten(1)
 
