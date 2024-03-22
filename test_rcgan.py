@@ -171,8 +171,11 @@ if __name__ == '__main__':
         #
         sigma_k = w_norms ** 2
 
-    print(torch.sum(sigma_k))
+    print(torch.sum(sigma_k).numpy())
     print(np.trace(posterior.posterior_cov))
+
+    print(np.sort(sigma_k.numpy()))
+    print(e_vals)
 
     x_hat = x_hat.numpy()
     sigma_k = sigma_k.numpy()
@@ -192,8 +195,6 @@ if __name__ == '__main__':
 
     plt.figure()
     plt.scatter(x_axis, posterior.posterior_mean)
-    print(np.mean((posterior.posterior_mean[:, 0] - posterior_mean_hat)**2))
-    print(np.mean((posterior.posterior_mean[:, 0] - posterior_mean_hat_lazy_reg) ** 2))
 
     plt.plot(x_axis, posterior_mean_hat)
     plt.plot(x_axis, posterior_mean_hat_lazy_reg)
