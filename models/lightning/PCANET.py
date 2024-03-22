@@ -12,6 +12,8 @@ class PCANET(pl.LightningModule):
         self.args = args
         self.exp_name = exp_name
         self.d = d
+        self.second_moment_loss_lambda = 1e-1
+        self.second_moment_loss_grace = 200
 
         self.pca_net = PCALinear(d)
         self.mean_net = MMSELinear(d)
@@ -47,27 +49,6 @@ class PCANET(pl.LightningModule):
         x_orth = torch.stack(x_orth, dim=1).view(*x_shape)
         return x_orth
 
-    def gramm_schmidt(self, directions):
-        principle_components = torch.zeros(directions.shape).to(directions.device)
-        diff_vals = torch.zeros(directions.shape).to(directions.device)
-        for k in range(directions.shape[1]):
-            d = directions[:, k, :].clone()
-            if k == 0:
-                principle_components[:, 0, :] = d / torch.norm(d, p=2, dim=1)[:, None]
-                diff_vals[:, k, :] = d
-            else:
-                sum_val = torch.zeros(directions.shape[0], self.d).to(directions.device)
-                for l in range(k):
-                    detached_pc = principle_components[:, l, :].clone().detach()
-                    inner_product = torch.sum(d * detached_pc, dim=1)
-                    sum_val = sum_val + inner_product[:, None] * detached_pc
-
-                diff_vals[:, k, :] = d - sum_val
-                diff_val_clone = diff_vals[:, k, :].clone()
-                principle_components[:, k, :] = diff_val_clone / torch.norm(diff_val_clone, p=2, dim=1)[:, None]
-
-        return principle_components, diff_vals
-
     def training_step(self, batch, batch_idx):
         torch.autograd.set_detect_anomaly(True)
         x, y, mask = batch
@@ -90,28 +71,57 @@ class PCANET(pl.LightningModule):
         if self.current_epoch >= 0:
             x_hat = x_hat.clone().detach()
 
+            # directions = self.forward(y, x_hat)
+            # principle_components = self.gram_schmidt(directions)
+
             print('in')
-            directions = self.forward(y, x_hat)
-            principle_components, diff_vals = self.gram_schmidt(directions)
+            w_mat = self.gram_schmidt(self.forward(y, x_hat))
+
+            w_mat_ = w_mat.flatten(2)
+            w_norms = w_mat_.norm(dim=2)
+            w_hat_mat = w_mat_ / w_norms[:, :, None]
             print('out')
 
-            sigma_loss = torch.zeros(directions.shape[0]).to(directions.device)
-            w_loss = torch.zeros(directions.shape[0]).to(directions.device)
-            for k in range(directions.shape[1]):
-                e_i_norm = torch.norm((x - x_hat)[:, 0, :], p=2, dim=1)
-                w_t_ei = torch.sum(principle_components[:, k, :] * (x - x_hat)[:, 0, :], dim=1)
-                w_t_ei_2 = w_t_ei ** 2 / (e_i_norm.clone().detach() ** 2)
+            err = (x - x_hat).flatten(1)
 
-                sigma_loss += (torch.norm(diff_vals[:, k, :], p=2, dim=1) ** 2 - w_t_ei.clone().detach() ** 2) ** 2 / (e_i_norm.clone().detach() ** 4)
-                w_loss += w_t_ei_2
+            ## Normalizing by the error's norm
+            ## -------------------------------
+            err_norm = err.norm(dim=1)
+            err = err / err_norm[:, None]
+            w_norms = w_norms / err_norm[:, None]
 
-            sigma_loss = sigma_loss.sum()
-            w_loss = - w_loss.sum()
+            ## W hat loss
+            ## ----------
+            err_proj = torch.einsum('bki,bi->bk', w_hat_mat, err)
+            reconst_err = 1 - err_proj.pow(2).sum(dim=1)
 
-            self.log('sigma_loss', sigma_loss, prog_bar=True)
-            self.log('w_loss', w_loss, prog_bar=True)
+            ## W norms loss
+            ## ------------
+            second_moment_mse = (w_norms.pow(2) - err_proj.detach().pow(2)).pow(2)
 
-            pca_loss = w_loss + sigma_loss
+            second_moment_loss_lambda = -1 + 2 * self.global_step / self.second_moment_loss_grace
+            second_moment_loss_lambda = max(min(second_moment_loss_lambda, 1), 1e-6)
+            second_moment_loss_lambda *= self.second_moment_loss_lambda
+            objective = reconst_err.mean() + second_moment_loss_lambda * second_moment_mse.mean()
+
+            #
+            # sigma_loss = torch.zeros(directions.shape[0]).to(directions.device)
+            # w_loss = torch.zeros(directions.shape[0]).to(directions.device)
+            # for k in range(directions.shape[1]):
+            #     e_i_norm = torch.norm((x - x_hat)[:, 0, :], p=2, dim=1)
+            #     w_t_ei = torch.sum(principle_components[:, k, :] * (x - x_hat)[:, 0, :], dim=1)
+            #     w_t_ei_2 = w_t_ei ** 2 / (e_i_norm.clone().detach() ** 2)
+            #
+            #     sigma_loss += (torch.norm(diff_vals[:, k, :], p=2, dim=1) ** 2 - w_t_ei.clone().detach() ** 2) ** 2 / (e_i_norm.clone().detach() ** 4)
+            #     w_loss += w_t_ei_2
+            #
+            # sigma_loss = sigma_loss.sum()
+            # w_loss = - w_loss.sum()
+
+            self.log('sigma_loss', second_moment_mse.mean(), prog_bar=True)
+            self.log('w_loss', reconst_err.mean(), prog_bar=True)
+
+            pca_loss = objective
 
             opt_pca.zero_grad()
             self.manual_backward(pca_loss)
