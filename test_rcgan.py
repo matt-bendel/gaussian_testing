@@ -201,13 +201,20 @@ if __name__ == '__main__':
     plt.savefig(f'figs/mean_compare_{args.d}.png')
     plt.close()
 
+    pca_cov = np.zeros((args.d, args.d))
+    for i in range(principle_components.shape[1]):
+        pc_np = np.expand_dims(principle_components[0, i, :].numpy(), axis=1)
+        pca_cov += sigma_k[0, i] * pc_np @ pc_np.T
+
+    _, e_vals_nppc, e_vecs_nppcs = np.linalg.svd(pca_cov)
+
     # TODO: Semilogy
     plt.figure()
     plt.scatter(x_axis, np.flip(np.where(e_vals < 1e-3, 0, e_vals)))
     plt.plot(x_axis, np.where(e_vals_hat < 1e-3, 0, e_vals_hat))
     plt.plot(x_axis, np.where(e_vals_hat_lazy_reg < 1e-3, 0, e_vals_hat_lazy_reg))
     # plt.plot(x_axis, np.where(e_vals_hat_no_std < 1e-3, 0, e_vals_hat_no_std))
-    plt.plot(x_axis, np.where(sigma_k[0, :] < 1e-3, 0, sigma_k[0, :]))
+    plt.plot(x_axis, np.where(e_vals_nppc[0, :] < 1e-3, 0, e_vals_nppc[0, :]))
     plt.legend(labels)
     plt.savefig(f'figs/eig_val_compare_{args.d}.png')
     plt.close()
@@ -217,13 +224,6 @@ if __name__ == '__main__':
     plt.scatter([1], np.trace(posterior_cov_hat))
     plt.scatter([1], np.trace(posterior_cov_hat_lazy_reg))
     # plt.scatter([1], np.trace(posterior_cov_hat_no_std))
-
-    pca_cov = np.zeros((args.d, args.d))
-    for i in range(principle_components.shape[1]):
-        pc_np = np.expand_dims(principle_components[0, i, :].numpy(), axis=1)
-        pca_cov += sigma_k[0, i] * pc_np @ pc_np.T
-
-    _, e_vals_nppc, e_vecs_nppcs = np.linalg.svd(pca_cov)
 
     # temp1, temp2 = np.linalg.eigh(pca_cov)
     # print(temp1)
@@ -251,7 +251,7 @@ if __name__ == '__main__':
         plt.plot(x_axis, np.abs(np.abs(e_vecs_hat[i, :]) - np.abs(e_vecs[:, -(i+1)])))
         plt.plot(x_axis, np.abs(np.abs(e_vecs_hat_lazy_reg[i, :]) - np.abs(e_vecs[:, -(i+1)])))
         # plt.plot(x_axis, np.abs(e_vecs_hat_no_std[i, :]))
-        # plt.plot(x_axis, np.abs(principle_components[0, i].numpy()))
+        plt.plot(x_axis, np.abs(e_vecs[i, :]))
         plt.legend(['rcGAN', 'rcGAN + lazy reg', 'NPPC'])
         plt.title(f'Eigenvector Error {i+1}')
         plt.savefig(f'figs/eig_vec_compare_{args.d}_{i}.png')
