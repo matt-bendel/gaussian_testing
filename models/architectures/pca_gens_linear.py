@@ -26,7 +26,6 @@ class PCALinear(nn.Module):
         super().__init__()
         self.d = d
         self.layer = nn.Sequential(
-            nn.Flatten(),
             nn.Linear(2*d, d)
         )
         # for i in range(self.d):
@@ -39,5 +38,5 @@ class PCALinear(nn.Module):
 
     def forward(self, y, x_hat):
         '''Forward pass'''
-        return self.layer(torch.cat([y, x_hat], dim=-1).unsqueeze(1).repeat(1, self.d, 1))
+        return self.layer(torch.cat([y, x_hat], dim=-1).repeat(1, self.d, 1))
         # return torch.cat([layer(torch.cat([y, x_hat], dim=-1)).unsqueeze(1) for layer in self.layers], dim=1)
