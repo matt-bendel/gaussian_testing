@@ -92,59 +92,55 @@ class PCANET(pl.LightningModule):
         if self.current_epoch >= 10:
             x_hat = x_hat.clone().detach()
 
-            directions = self.forward(y, x_hat)
-            principle_components, diff_vals = self.gramm_schmidt(directions)
+            # directions = self.forward(y, x_hat)
+            # principle_components, diff_vals = self.gramm_schmidt(directions)
 
-            # w_mat = self.gram_schmidt(self.forward(y, x_hat))
-            #
-            # w_mat_ = w_mat.flatten(2)
-            # w_norms = w_mat_.norm(dim=2)
-            # w_hat_mat = w_mat_ / w_norms[:, :, None]
-            #
-            # err = (x - x_hat).flatten(1)
+            w_mat = self.gram_schmidt(self.forward(y, x_hat))
 
-            ## Normalizing by the error's norm
-            ## -------------------------------
-            # err_norm = err.norm(dim=1)
-            # err = err / err_norm[:, None]
-            # w_norms = w_norms / err_norm[:, None]
+            w_mat_ = w_mat.flatten(2)
+            w_norms = w_mat_.norm(dim=2)
+            w_hat_mat = w_mat_ / w_norms[:, :, None]
 
-            ## W hat loss
-            ## ----------
-            # err_proj = torch.einsum('bki,bi->bk', w_hat_mat, err)
-            # reconst_err = 1 - err_proj.pow(2).sum(dim=1)
+            err = (x - x_hat).flatten(1)
 
-            ## W norms loss
-            ## ------------
-            # second_moment_mse = (w_norms.pow(2) - err_proj.detach().pow(2)).pow(2)
-            #
-            # second_moment_loss_lambda = -1 + 2 * self.global_step / self.second_moment_loss_grace
-            # second_moment_loss_lambda = max(min(second_moment_loss_lambda, 1), 1e-6)
-            # second_moment_loss_lambda *= self.second_moment_loss_lambda
-            # objective = reconst_err.mean() + second_moment_loss_lambda * second_moment_mse.mean()
+            # Normalizing by the error's norm
+            # -------------------------------
+            err_norm = err.norm(dim=1)
+            err = err / err_norm[:, None]
+            w_norms = w_norms / err_norm[:, None]
+
+            # W hat loss
+            # ----------
+            err_proj = torch.einsum('bki,bi->bk', w_hat_mat, err)
+            reconst_err = 1 - err_proj.pow(2).sum(dim=1)
+
+            # W norms loss
+            # ------------
+            second_moment_mse = (w_norms.pow(2) - err_proj.detach().pow(2)).pow(2)
+            objective = reconst_err.mean() + second_moment_mse.mean()
 
             #
-            sigma_loss = torch.zeros(directions.shape[0]).to(directions.device)
-            w_loss = torch.zeros(directions.shape[0]).to(directions.device)
-            for k in range(directions.shape[1]):
-                e_i_norm = torch.norm((x - x_hat)[:, 0, :], p=2, dim=1)
-                w_t_ei = torch.sum(principle_components[:, k, :] * (x - x_hat)[:, 0, :], dim=1)
-                w_t_ei_2 = w_t_ei ** 2 / (e_i_norm.clone().detach() ** 2)
+            # sigma_loss = torch.zeros(directions.shape[0]).to(directions.device)
+            # w_loss = torch.zeros(directions.shape[0]).to(directions.device)
+            # for k in range(directions.shape[1]):
+            #     e_i_norm = torch.norm((x - x_hat)[:, 0, :], p=2, dim=1)
+            #     w_t_ei = torch.sum(principle_components[:, k, :] * (x - x_hat)[:, 0, :], dim=1)
+            #     w_t_ei_2 = w_t_ei ** 2 / (e_i_norm.clone().detach() ** 2)
+            #
+            #     sigma_loss += (torch.norm(diff_vals[:, k, :], p=2, dim=1) ** 2 - w_t_ei.clone().detach() ** 2) ** 2 / (e_i_norm.clone().detach() ** 4)
+            #     w_loss += w_t_ei_2
+            #
+            # sigma_loss = sigma_loss.sum()
+            # w_loss = - w_loss.sum()
+            #
+            # self.log('sigma_loss', sigma_loss, prog_bar=True)
+            # self.log('w_loss', w_loss, prog_bar=True)
 
-                sigma_loss += (torch.norm(diff_vals[:, k, :], p=2, dim=1) ** 2 - w_t_ei.clone().detach() ** 2) ** 2 / (e_i_norm.clone().detach() ** 4)
-                w_loss += w_t_ei_2
+            self.log('sigma_loss', second_moment_mse.mean(), prog_bar=True)
+            self.log('w_loss', reconst_err.mean(), prog_bar=True)
 
-            sigma_loss = sigma_loss.sum()
-            w_loss = - w_loss.sum()
-
-            self.log('sigma_loss', sigma_loss, prog_bar=True)
-            self.log('w_loss', w_loss, prog_bar=True)
-
-            # self.log('sigma_loss', second_moment_mse.mean(), prog_bar=True)
-            # self.log('w_loss', reconst_err.mean(), prog_bar=True)
-
-            # pca_loss = objective
-            pca_loss = w_loss + sigma_loss
+            pca_loss = objective
+            # pca_loss = w_loss + sigma_loss
 
             opt_pca.zero_grad()
             self.manual_backward(pca_loss)
