@@ -32,6 +32,4 @@ class PCALinear(nn.Module):
 
     def forward(self, y, x_hat):
         '''Forward pass'''
-        print(y.shape)
-        print(x_hat.shape)
         return self.layers(torch.cat([y, x_hat], dim=-1)).view(y.shape[0], self.d, -1)
