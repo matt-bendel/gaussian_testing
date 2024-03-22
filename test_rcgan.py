@@ -165,8 +165,8 @@ if __name__ == '__main__':
 
         sigma_k = w_norms ** 2
 
-    print(torch.sort(sigma_k))
-    print(e_vals)
+    print(torch.sum(sigma_k))
+    print(np.trace(posterior.posterior_cov))
     x_hat = x_hat.numpy()
     sigma_k = sigma_k.numpy()
 
