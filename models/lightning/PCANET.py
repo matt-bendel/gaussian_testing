@@ -75,8 +75,8 @@ class PCANET(pl.LightningModule):
 
             print('in')
             directions = self.forward(y, x_hat)
-            print('out')
             principle_components, diff_vals = self.gramm_schmidt(directions)
+            print('out')
 
             sigma_loss = torch.zeros(directions.shape[0]).to(directions.device)
             w_loss = torch.zeros(directions.shape[0]).to(directions.device)
