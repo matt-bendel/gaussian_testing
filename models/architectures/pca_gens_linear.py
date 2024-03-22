@@ -25,7 +25,7 @@ class PCALinear(nn.Module):
     def __init__(self, d):
         super().__init__()
         self.d = d
-        self.layers = []
+        self.layers = nn.ModuleList()  # << MODIFIED LINE <<
         for i in range(self.d):
             self.layers.append(
                 nn.Sequential(
