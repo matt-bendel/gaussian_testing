@@ -212,11 +212,11 @@ if __name__ == '__main__':
     plt.scatter([1], np.trace(posterior_cov_hat_lazy_reg))
     # plt.scatter([1], np.trace(posterior_cov_hat_no_std))
 
+    print(sigma_k[0])
     pca_cov = np.zeros((args.d, args.d))
     for i in range(principle_components.shape[1]):
         pc_np = np.expand_dims(principle_components[0, i, :].numpy(), axis=1)
-        print(pc_np.shape)
-        pca_cov += sigma_k[0, i] * pc_np @ pc_np.T
+        pca_cov += pc_np @ pc_np.T
 
     # temp1, temp2 = np.linalg.eigh(pca_cov)
     # print(temp1)
