@@ -163,16 +163,7 @@ if __name__ == '__main__':
         w_norms = w_mat.norm(dim=2)
         principle_components = w_mat / w_norms[:, :, None]
 
-        w_mat_ = w_mat.flatten(2)
-        err = (x - x_hat).flatten(1)
-
-        ## Normalizing by the error's norm
-        ## -------------------------------
-        err_norm = err.norm(dim=1)
-        err = err / err_norm[:, None]
-        w_norms = w_norms / err_norm[:, None]
-
-        sigma_k = w_norms.pow(2)
+        sigma_k = w_norms
 
     x_hat = x_hat.numpy()
     sigma_k = sigma_k.numpy()
