@@ -158,8 +158,6 @@ if __name__ == '__main__':
 
     with torch.no_grad():
         x_hat = pca_model.mean_net(y.unsqueeze(0)).unsqueeze(1)
-        print(x_hat.shape)
-        print(y.unsqueeze(0).shape)
         directions = pca_model.forward(y.unsqueeze(0), x_hat)
         w_mat = pca_model.gram_schmidt(pca_model.forward(y, x_hat))
 
