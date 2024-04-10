@@ -218,7 +218,7 @@ class rcGANwLazyRegSimple(pl.LightningModule):
                 w_loss += 1 / (torch.norm(current_x_xm, p=2) ** 2 * (self.args.num_z_pca//10)).detach() * w_obj[0:self.args.num_z_pca//10].sum()  # 1e-3 for 25 iters
 
                 gens_zm_det = gens_zm[n].detach()
-                gens_zm_det[0, :] = x_zm[n, 0, :].detach()
+                gens_zm_det = x_zm[n, 0, :].detach().unsqueeze(0)
 
                 if self.current_epoch >= 10:
                     inner_product_mat = 1 / self.args.num_z_pca * torch.matmul(Vh, torch.matmul(
