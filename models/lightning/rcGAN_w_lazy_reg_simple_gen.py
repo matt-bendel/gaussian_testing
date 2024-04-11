@@ -218,14 +218,14 @@ class rcGANwLazyRegSimple(pl.LightningModule):
                 w_loss += 1 / (torch.norm(current_x_xm, p=2) ** 2 * (self.args.num_z_pca//10)).detach() * w_obj[0:self.args.num_z_pca//10].sum()  # 1e-3 for 25 iters
 
                 gens_zm_det = gens_zm[n].detach()
-                gens_zm_det = x_zm[n, 0, :].detach().unsqueeze(0)
+                gens_zm_det[0, :] = x_zm[n, 0, :].detach()
 
                 if self.current_epoch >= 10:
                     inner_product_mat = 1 / self.args.num_z_pca * torch.matmul(Vh, torch.matmul(
                         torch.transpose(gens_zm_det.clone().detach(), 0, 1), torch.matmul(gens_zm_det.clone().detach(), Vh.mT)))
 
                     #cfg 1
-                    sig_diff = 1 / (torch.norm(current_x_xm, p=2) ** 2 * (self.args.num_z_pca//10)).detach() * (1 - 1 / (S ** 2 + self.lam_eps) * torch.diag(inner_product_mat.clone().detach())) ** 2
+                    sig_diff = 1 / (torch.norm(current_x_xm, p=2) ** 2 * (self.args.num_z_pca//10)).detach() * (1 - S**2 / torch.diag(inner_product_mat.clone().detach())) ** 2
 
                     sig_loss += self.beta_pca * sig_diff[0:self.args.num_z_pca//10].sum()
 
