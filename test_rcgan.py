@@ -239,9 +239,9 @@ if __name__ == '__main__':
 
     print("\nCFID")
     # rcgan_cfids = posterior.cfid(np.mean(posterior_means, axis=0), posterior_cov_hat)
-    # rcgan_w_reg_cfids = posterior.cfid(np.mean(posterior_means_reg, axis=0), posterior_cov_hat_lazy_reg)
+    rcgan_w_reg_cfids = posterior.cfid(np.mean(posterior_means_reg, axis=0), posterior_cov_hat_lazy_reg)
     # print(f'rcGAN: m={np.mean((posterior.posterior_mean[:, 0] - posterior_mean_hat)**2)}, c:{rcgan_cfids[1]}')
-    # print(f'rcGAN + lazy reg: m={np.mean((posterior.posterior_mean[:, 0] - posterior_mean_hat_lazy_reg) ** 2)}, c:{rcgan_w_reg_cfids[1]}')
+    print(f'rcGAN + lazy reg: m={np.mean((posterior.posterior_mean[:, 0] - posterior_mean_hat_lazy_reg) ** 2)}, c:{rcgan_w_reg_cfids[1]}')
     # print(f'rcGAN + lazy reg - std.: {posterior.cfid(posterior_mean_hat_no_std, posterior_cov_hat_no_std)}')
     print(f'PCANET: {posterior.cfid(x_hat, pca_cov)}')
 
