@@ -210,11 +210,11 @@ if __name__ == '__main__':
 
     # TODO: Semilogy
     plt.figure()
-    plt.scatter(x_axis, np.flip(np.where(e_vals < 1e-3, 0, e_vals)))
-    plt.semilogy(x_axis, np.where(e_vals_hat < 1e-3, 0, e_vals_hat), linestyle='dashed')
-    plt.semilogy(x_axis, np.where(e_vals_hat_lazy_reg < 1e-3, 0, e_vals_hat_lazy_reg), linestyle='dashed')
+    plt.scatter(x_axis, np.flip(e_vals))
+    plt.semilogy(x_axis, e_vals_hat, linestyle='dashed')
+    plt.semilogy(x_axis, e_vals_hat_lazy_reg, linestyle='dashed')
     # plt.plot(x_axis, np.where(e_vals_hat_no_std < 1e-3, 0, e_vals_hat_no_std))
-    plt.semilogy(x_axis, np.where(e_vals_nppc < 1e-3, 0, e_vals_nppc), linestyle='dashed')
+    plt.semilogy(x_axis, e_vals_nppc, linestyle='dashed')
     plt.legend(labels)
     plt.savefig(f'figs/eig_val_compare_{args.d}.png')
     plt.close()
