@@ -103,7 +103,7 @@ if __name__ == '__main__':
     #     cfg.checkpoint_dir + args.exp_name + '_no_std_dev/best-mse.ckpt')
     # model_no_std.eval()
 
-    model_lazy_reg = rcGANwLazyRegSimple.load_from_checkpoint(cfg.checkpoint_dir + f'rcgan_lazy_invertsig_d={args.d}/best.ckpt')
+    model_lazy_reg = rcGANwLazyRegSimple.load_from_checkpoint(cfg.checkpoint_dir + f'rcgan_lazy_d={args.d}/best.ckpt')
         # rcGANwLazyRegSimple.load_from_checkpoint(
         # cfg.checkpoint_dir + 'rcgan_gaussian_reg_d=60_freq=100/best.ckpt')
     model_lazy_reg.eval().to('cpu')
@@ -210,11 +210,11 @@ if __name__ == '__main__':
 
     # TODO: Semilogy
     plt.figure()
-    plt.scatter(x_axis, np.flip(np.where(e_vals < 1e-3, 0, e_vals)))
-    plt.semilogy(x_axis, np.where(e_vals_hat < 1e-3, 0, e_vals_hat), linestyle='dashed')
-    plt.semilogy(x_axis, np.where(e_vals_hat_lazy_reg < 1e-3, 0, e_vals_hat_lazy_reg), linestyle='dashed')
+    plt.scatter(x_axis, e_vals)
+    plt.semilogy(x_axis, e_vals_hat, linestyle='dashed')
+    plt.semilogy(x_axis, e_vals_hat_lazy_reg, linestyle='dashed')
     # plt.plot(x_axis, np.where(e_vals_hat_no_std < 1e-3, 0, e_vals_hat_no_std))
-    plt.semilogy(x_axis, np.where(e_vals_nppc < 1e-3, 0, e_vals_nppc), linestyle='dashed')
+    plt.semilogy(x_axis, e_vals_nppc, linestyle='dashed')
     plt.legend(labels)
     plt.savefig(f'figs/eig_val_compare_{args.d}.png')
     plt.close()
