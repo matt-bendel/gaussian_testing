@@ -187,7 +187,7 @@ if __name__ == '__main__':
     x_axis = np.arange(args.d) + 1
 
     # labels = ['True', 'rcGAN + lazy reg']
-    labels = ['True', 'rcGAN', 'rcGAN + lazy reg', 'NPPC']
+    labels = ['True', 'rcGAN', 'pcaGAN', 'NPPC']
     # labels = ['True', 'rcGAN', 'rcGAN + lazy reg', 'rcGAN + lazy reg - std.', 'PCANET']
 
     plt.figure()
@@ -248,13 +248,13 @@ if __name__ == '__main__':
 
     for i in range(5):
         plt.figure()
-        # plt.scatter(x_axis, np.abs(e_vecs[:, -(i+1)]))
-        plt.plot(x_axis, np.abs(np.abs(e_vecs_hat[i, :]) - np.abs(e_vecs[:, -(i+1)])))
-        plt.plot(x_axis, np.abs(np.abs(e_vecs_hat_lazy_reg[i, :]) - np.abs(e_vecs[:, -(i+1)])))
+        plt.scatter(x_axis, np.abs(e_vecs[:, -(i+1)]))
+        plt.plot(x_axis, np.abs(np.abs(e_vecs_hat[i, :])))
+        plt.plot(x_axis, np.abs(np.abs(e_vecs_hat_lazy_reg[i, :])))
         # plt.plot(x_axis, np.abs(e_vecs_hat_no_std[i, :]))
-        plt.plot(x_axis, np.abs(np.abs(e_vecs_nppcs[i, :]) - np.abs(e_vecs[:, -(i+1)])))
-        plt.legend(['rcGAN', 'rcGAN + lazy reg', 'NPPC'])
-        plt.title(f'Eigenvector Error {i+1}')
+        plt.plot(x_axis, np.abs(np.abs(e_vecs_nppcs[i, :])))
+        plt.legend(['True', 'rcGAN', 'pcaGAN', 'NPPC'])
+        plt.title(f'Eigenvector {i+1}')
         plt.savefig(f'figs/eig_vec_compare_{args.d}_{i}.png')
         plt.close()
 
